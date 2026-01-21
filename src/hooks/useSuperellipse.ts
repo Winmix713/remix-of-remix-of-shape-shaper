@@ -1,10 +1,17 @@
 import { useState, useMemo } from 'react';
-import { getSuperellipsePath } from '../utils/math';
+import { getSuperellipsePath, getAsymmetricSuperellipsePath } from '../utils/math';
 
 export type GradientStop = {
   color: string;
   position: number;
 };
+
+export interface CornerExponents {
+  topLeft: number;
+  topRight: number;
+  bottomRight: number;
+  bottomLeft: number;
+}
 
 export interface SuperellipseState {
   // Dimensions
@@ -12,6 +19,10 @@ export interface SuperellipseState {
   height: number;
   exp: number;
   smoothing: number;
+  
+  // Asymmetric corners
+  useAsymmetricCorners: boolean;
+  cornerExponents: CornerExponents;
   
   // Colors
   colorMode: 'solid' | 'linear' | 'radial' | 'conic';
@@ -57,6 +68,14 @@ const DEFAULT_STATE: SuperellipseState = {
   height: 400,
   exp: 4.0,
   smoothing: 0.5,
+  
+  useAsymmetricCorners: false,
+  cornerExponents: {
+    topLeft: 4.0,
+    topRight: 4.0,
+    bottomRight: 4.0,
+    bottomLeft: 4.0,
+  },
   
   colorMode: 'solid',
   solidColor: '#FF9F00',
@@ -111,8 +130,15 @@ export function useSuperellipse() {
   const [state, setState] = useState<SuperellipseState>(DEFAULT_STATE);
 
   const pathData = useMemo(() => {
-    return getSuperellipsePath(state.width, state.height, state.exp, { steps: state.width > 500 ? 720 : 360 });
-  }, [state.width, state.height, state.exp]);
+    if (state.useAsymmetricCorners) {
+      return getAsymmetricSuperellipsePath(
+        state.width, 
+        state.height, 
+        state.cornerExponents
+      );
+    }
+    return getSuperellipsePath(state.width, state.height, state.exp);
+  }, [state.width, state.height, state.exp, state.useAsymmetricCorners, state.cornerExponents]);
 
   const updateState = (updates: Partial<SuperellipseState>) => {
     setState(prev => ({ ...prev, ...updates }));

@@ -61,8 +61,93 @@ export interface CSSOptions {
 }
 
 // ============================================================================
+// TYPES FOR ASYMMETRIC CORNERS
+// ============================================================================
+
+export interface CornerExponents {
+  topLeft: number;
+  topRight: number;
+  bottomRight: number;
+  bottomLeft: number;
+}
+
+// ============================================================================
 // CORE MATHEMATICAL FUNCTIONS
 // ============================================================================
+
+/**
+ * Get the exponent for a given angle based on corner exponents
+ * Uses smooth interpolation between corners
+ */
+function getExponentForAngle(
+  angle: number, 
+  corners: CornerExponents
+): number {
+  // Normalize angle to 0-2PI
+  const normalizedAngle = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  
+  // Define corner positions (in radians)
+  // Top-right: 0, Top-left: PI/2, Bottom-left: PI, Bottom-right: 3PI/2
+  const cornerAngles = [
+    { angle: Math.PI * 0.25, exp: corners.topRight },      // Top-right quadrant center
+    { angle: Math.PI * 0.75, exp: corners.topLeft },       // Top-left quadrant center
+    { angle: Math.PI * 1.25, exp: corners.bottomLeft },    // Bottom-left quadrant center
+    { angle: Math.PI * 1.75, exp: corners.bottomRight },   // Bottom-right quadrant center
+  ];
+  
+  // Find which quadrant we're in and blend
+  for (let i = 0; i < 4; i++) {
+    const curr = cornerAngles[i];
+    const next = cornerAngles[(i + 1) % 4];
+    const nextAngle = next.angle <= curr.angle ? next.angle + 2 * Math.PI : next.angle;
+    
+    if (normalizedAngle >= curr.angle - Math.PI * 0.25 && 
+        normalizedAngle < curr.angle + Math.PI * 0.25) {
+      return curr.exp;
+    }
+  }
+  
+  return corners.topRight; // Fallback
+}
+
+/**
+ * Generate SVG path data string for a superellipse with asymmetric corners
+ */
+export function getAsymmetricSuperellipsePath(
+  w: number,
+  h: number,
+  corners: CornerExponents,
+  options: { steps?: number; precision?: number } = {}
+): string {
+  const { steps = 360, precision = 2 } = options;
+  
+  if (w <= 0 || h <= 0) {
+    throw new Error('Width and height must be positive numbers');
+  }
+  
+  const a = w / 2;
+  const b = h / 2;
+  const points: string[] = [];
+  
+  for (let i = 0; i <= steps; i++) {
+    const t = (i * 2 * Math.PI) / steps;
+    const cosT = Math.cos(t);
+    const sinT = Math.sin(t);
+    
+    // Get the exponent for this angle
+    const n = Math.max(0.5, getExponentForAngle(t, corners));
+    
+    const x = a * Math.sign(cosT) * Math.pow(Math.abs(cosT), 2 / n);
+    const y = b * Math.sign(sinT) * Math.pow(Math.abs(sinT), 2 / n);
+    
+    const finalX = (x + a).toFixed(precision);
+    const finalY = (y + b).toFixed(precision);
+    
+    points.push(`${finalX} ${finalY}`);
+  }
+  
+  return `M ${points.join(' L ')} Z`;
+}
 
 /**
  * Generate SVG path data string for a superellipse
