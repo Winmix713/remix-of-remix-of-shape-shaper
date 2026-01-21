@@ -31,7 +31,7 @@ const Index: React.FC = () => {
     <div className="bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 flex flex-col h-screen overflow-hidden font-sans transition-colors duration-300">
       <Header theme={theme} toggleTheme={toggleTheme} />
       
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+      <main id="main-content" className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         <PreviewArea 
           state={state} 
           pathData={pathData} 

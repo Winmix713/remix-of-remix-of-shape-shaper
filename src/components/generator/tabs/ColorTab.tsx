@@ -60,10 +60,13 @@ const ColorInput: FC<ColorInputProps> = ({ value, onChange, label, size = 'md' }
     ? { container: 'p-0.5', swatch: 'size-5', input: 'text-[10px]', icon: 'w-3 h-3' }
     : { container: 'p-1', swatch: 'size-7', input: 'text-sm', icon: 'w-3.5 h-3.5' };
 
+  const inputId = React.useId();
+  const errorId = React.useId();
+
   return (
     <div className="space-y-1">
       {label && (
-        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">
+        <label htmlFor={inputId} className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">
           {label}
         </label>
       )}
@@ -78,11 +81,12 @@ const ColorInput: FC<ColorInputProps> = ({ value, onChange, label, size = 'md' }
             value={value}
             onChange={handleColorPickerChange}
             className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer opacity-0 z-10"
-            aria-label={label || "Color picker"}
+            aria-label={label ? `${label} color picker` : "Color picker"}
           />
-          <div className="w-full h-full" style={{ backgroundColor: isValid ? value : '#ff0000' }} />
+          <div className="w-full h-full" style={{ backgroundColor: isValid ? value : '#ff0000' }} aria-hidden="true" />
         </div>
         <input
+          id={inputId}
           type="text"
           value={internalValue}
           onChange={handleInputChange}
@@ -95,26 +99,27 @@ const ColorInput: FC<ColorInputProps> = ({ value, onChange, label, size = 'md' }
           maxLength={7}
           aria-label={label ? `${label} hex code` : "Hex color code"}
           aria-invalid={!isValid}
+          aria-describedby={!isValid ? errorId : undefined}
         />
         <button
           onClick={copyColor}
           disabled={!isValid}
-          className={`p-1.5 rounded transition-all ${
+          className={`p-1.5 rounded transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
             copied
               ? 'bg-green-100 dark:bg-green-900/30'
               : 'hover:bg-zinc-200 dark:hover:bg-zinc-700'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
-          aria-label="Copy color code"
+          aria-label="Copy color code to clipboard"
         >
           {copied ? (
-            <Check className={`${sizeClasses.icon} text-green-600`} />
+            <Check className={`${sizeClasses.icon} text-green-600`} aria-hidden="true" />
           ) : (
-            <Copy className={`${sizeClasses.icon} text-zinc-500`} />
+            <Copy className={`${sizeClasses.icon} text-zinc-500`} aria-hidden="true" />
           )}
         </button>
       </div>
       {!isValid && (
-        <p className="text-[9px] text-red-500 dark:text-red-400 px-1 animate-fade-in">
+        <p id={errorId} className="text-[9px] text-red-500 dark:text-red-400 px-1 animate-fade-in" role="alert" aria-live="polite">
           Invalid hex format (e.g., #FF5733)
         </p>
       )}
