@@ -125,9 +125,32 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
 
       {/* Phone Frame */}
       <div 
-        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-colors duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] border-border border-4 rounded-[40px] relative shadow-2xl"
+        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] border-border border-4 rounded-[40px] relative shadow-2xl"
         role="presentation"
         aria-label="Mobile preview frame"
+        style={{
+          width: `${state.width}px`,
+          height: `${state.height}px`,
+          clipPath: `path('${pathData}')`,
+          backgroundColor: state.colorMode === 'solid' ? state.solidColor : 'transparent',
+          opacity: state.colorMode === 'solid' ? state.solidOpacity / 100 : 1,
+          background: state.colorMode === 'linear' 
+            ? `linear-gradient(${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : state.colorMode === 'radial'
+            ? `radial-gradient(circle, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : state.colorMode === 'conic'
+            ? `conic-gradient(from ${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : undefined,
+          filter: state.blur > 0 ? `blur(${state.blur}px)` : undefined,
+          backdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+          WebkitBackdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+          border: state.borderEnabled 
+            ? `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`
+            : '4px solid var(--border)',
+          borderColor: state.borderEnabled ? state.strokeColor : undefined,
+          borderStyle: state.borderEnabled ? state.strokeStyle : 'solid',
+          borderWidth: state.borderEnabled ? `${state.strokeWidth}px` : '4px',
+        }}
       >
         
         {/* Glow Container - 4-layer progressive blur system */}
