@@ -1,0 +1,222 @@
+import React, { memo, useCallback } from 'react';
+import { Link, Unlink } from 'lucide-react';
+import { CornerExponents } from '../../hooks/useSuperellipse';
+
+interface CornerControlsProps {
+  useAsymmetric: boolean;
+  uniformExp: number;
+  cornerExponents: CornerExponents;
+  onToggleAsymmetric: (value: boolean) => void;
+  onUniformChange: (value: number) => void;
+  onCornerChange: (corner: keyof CornerExponents, value: number) => void;
+}
+
+const MIN_EXP = 0.5;
+const MAX_EXP = 10;
+
+const CornerSlider = memo<{
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  position: 'tl' | 'tr' | 'bl' | 'br';
+}>(({ label, value, onChange, position }) => {
+  const percentage = ((value - MIN_EXP) / (MAX_EXP - MIN_EXP)) * 100;
+  
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-medium text-zinc-500">{label}</span>
+        <span className="text-[10px] font-mono text-zinc-400">{value.toFixed(1)}</span>
+      </div>
+      <div className="relative">
+        <input
+          type="range"
+          min={MIN_EXP}
+          max={MAX_EXP}
+          step={0.1}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full appearance-none cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, rgb(99 102 241) 0%, rgb(99 102 241) ${percentage}%, rgb(228 228 231) ${percentage}%, rgb(228 228 231) 100%)`,
+          }}
+        />
+      </div>
+    </div>
+  );
+});
+
+CornerSlider.displayName = 'CornerSlider';
+
+export const CornerControls = memo<CornerControlsProps>(({
+  useAsymmetric,
+  uniformExp,
+  cornerExponents,
+  onToggleAsymmetric,
+  onUniformChange,
+  onCornerChange,
+}) => {
+  const handleApplyToAll = useCallback(() => {
+    onCornerChange('topLeft', uniformExp);
+    onCornerChange('topRight', uniformExp);
+    onCornerChange('bottomLeft', uniformExp);
+    onCornerChange('bottomRight', uniformExp);
+  }, [uniformExp, onCornerChange]);
+
+  return (
+    <div className="space-y-4">
+      {/* Toggle between uniform and asymmetric */}
+      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex-1">
+          <h3 className="text-xs font-semibold text-zinc-900 dark:text-white">
+            Asymmetric Corners
+          </h3>
+          <p className="text-[10px] text-zinc-500">
+            Control each corner independently
+          </p>
+        </div>
+        <button
+          onClick={() => onToggleAsymmetric(!useAsymmetric)}
+          className={`relative w-10 h-6 rounded-full transition-all ${
+            useAsymmetric ? 'bg-indigo-500' : 'bg-zinc-200 dark:bg-zinc-700'
+          }`}
+        >
+          <span
+            className="block w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
+            style={{
+              transform: useAsymmetric ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
+              margin: '0.25rem',
+            }}
+          />
+        </button>
+      </div>
+
+      {useAsymmetric ? (
+        <>
+          {/* Corner grid visualization */}
+          <div className="grid grid-cols-2 gap-3">
+            <CornerSlider
+              label="Top Left"
+              value={cornerExponents.topLeft}
+              onChange={(val) => onCornerChange('topLeft', val)}
+              position="tl"
+            />
+            <CornerSlider
+              label="Top Right"
+              value={cornerExponents.topRight}
+              onChange={(val) => onCornerChange('topRight', val)}
+              position="tr"
+            />
+            <CornerSlider
+              label="Bottom Left"
+              value={cornerExponents.bottomLeft}
+              onChange={(val) => onCornerChange('bottomLeft', val)}
+              position="bl"
+            />
+            <CornerSlider
+              label="Bottom Right"
+              value={cornerExponents.bottomRight}
+              onChange={(val) => onCornerChange('bottomRight', val)}
+              position="br"
+            />
+          </div>
+
+          {/* Quick actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleApplyToAll}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            >
+              <Link className="w-3 h-3" />
+              Apply uniform ({uniformExp.toFixed(1)}) to all
+            </button>
+          </div>
+
+          {/* Preset corner styles */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider px-1">
+              Corner Presets
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 2);
+                  onCornerChange('topRight', 2);
+                  onCornerChange('bottomLeft', 6);
+                  onCornerChange('bottomRight', 6);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Top Soft
+              </button>
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 6);
+                  onCornerChange('topRight', 6);
+                  onCornerChange('bottomLeft', 2);
+                  onCornerChange('bottomRight', 2);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Bottom Soft
+              </button>
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 2);
+                  onCornerChange('topRight', 8);
+                  onCornerChange('bottomLeft', 8);
+                  onCornerChange('bottomRight', 2);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Diagonal
+              </button>
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 2);
+                  onCornerChange('topRight', 2);
+                  onCornerChange('bottomLeft', 2);
+                  onCornerChange('bottomRight', 8);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Notched
+              </button>
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 1);
+                  onCornerChange('topRight', 1);
+                  onCornerChange('bottomLeft', 4);
+                  onCornerChange('bottomRight', 4);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Droplet
+              </button>
+              <button
+                onClick={() => {
+                  onCornerChange('topLeft', 4);
+                  onCornerChange('topRight', 4);
+                  onCornerChange('bottomLeft', 4);
+                  onCornerChange('bottomRight', 4);
+                }}
+                className="px-2 py-1.5 text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="p-3 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-zinc-100 dark:border-zinc-800">
+          <p className="text-[10px] text-zinc-500 leading-relaxed">
+            Enable asymmetric corners to control each corner's curvature independently. 
+            The uniform exponent is controlled in the Curvature section above.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+});
+
+CornerControls.displayName = 'CornerControls';
