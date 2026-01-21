@@ -40,6 +40,9 @@ export interface SuperellipseState {
   glowScale: number;
   glowPositionX: number;
   glowPositionY: number;
+  glowOpacity: number;
+  glowBlur: number;
+  glowSpread: number;
   
   // Effects
   blur: number;
@@ -89,9 +92,12 @@ const DEFAULT_STATE: SuperellipseState = {
   chroma: 0.18,
   lightness: 78,
   glowMaskSize: 0.3,
-  glowScale: 1.2,
-  glowPositionX: 0,
-  glowPositionY: -50,
+  glowScale: 0.9,
+  glowPositionX: -590,
+  glowPositionY: -1070,
+  glowOpacity: 100,
+  glowBlur: 120,
+  glowSpread: 40,
   
   blur: 0,
   backdropBlur: 0,

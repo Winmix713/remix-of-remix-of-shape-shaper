@@ -1,0 +1,1014 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import { Sun, Moon, Copy, Check, RotateCcw, ChevronDown, Code } from 'lucide-react';
+import { Slider } from '../ui/slider';
+import { Switch } from '../ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { cn } from '../../lib/utils';
+import { hexToOklch, oklchToHex } from '../../utils/color-conversion';
+
+type TabType = 'shape' | 'color' | 'effects' | 'glow' | 'css';
+
+export function SuperellipseGenerator() {
+  const [activeTab, setActiveTab] = useState<TabType>('glow');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [glowEnabled, setGlowEnabled] = useState(true);
+  
+  // Color state (OKLCH)
+  const [lightness, setLightness] = useState(78);
+  const [chroma, setChroma] = useState(0.18);
+  const [hue, setHue] = useState(70);
+  
+  // Shape state
+  const [exponent, setExponent] = useState(4);
+  const [size, setSize] = useState(200);
+  const [rotation, setRotation] = useState(0);
+  
+  // Effects state
+  const [blur, setBlur] = useState(0);
+  const [opacity, setOpacity] = useState(100);
+  const [shadow, setShadow] = useState(20);
+  
+  // Glow state
+  const [glowIntensity, setGlowIntensity] = useState(60);
+  const [glowSpread, setGlowSpread] = useState(40);
+  
+  // Original Glow Editor state
+  const [hexColor, setHexColor] = useState('#FF9F00');
+  const [maskSize, setMaskSize] = useState(0.3);
+  const [glowScale, setGlowScale] = useState(0.9);
+  const [positionX, setPositionX] = useState(-590);
+  const [positionY, setPositionY] = useState(-1070);
+  const [noiseEnabled, setNoiseEnabled] = useState(true);
+  const [noiseIntensity, setNoiseIntensity] = useState(0.35);
+  const [isShapeOpen, setIsShapeOpen] = useState(false);
+  const [isPositionOpen, setIsPositionOpen] = useState(false);
+  const [isCSSOpen, setIsCSSOpen] = useState(false);
+  
+  const [copied, setCopied] = useState(false);
+  
+  const isDark = theme === 'dark';
+  const color = `oklch(${lightness}% ${chroma} ${hue})`;
+  
+  // Transition settings
+  const transition = {
+    type: "tween",
+    ease: [0.4, 0, 0.2, 1],
+    duration: 0.8,
+  };
+
+  // SVG noise as data URL
+  const noiseSvg =
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' /></filter><rect width='100%' height='100%' filter='url(%23n)' /></svg>";
+
+  const resetParameters = () => {
+    setLightness(78);
+    setChroma(0.18);
+    setHue(70);
+    setExponent(4);
+    setSize(200);
+    setRotation(0);
+    setBlur(0);
+    setOpacity(100);
+    setShadow(20);
+    setGlowIntensity(60);
+    setGlowSpread(40);
+    setGlowEnabled(true);
+    setMaskSize(0.3);
+    setGlowScale(0.9);
+    setPositionX(-590);
+    setPositionY(-1070);
+    setNoiseEnabled(true);
+    setNoiseIntensity(0.35);
+  };
+  
+  const generateCSS = () => {
+    return `/* Glow Container */
+.glow-effect {
+  position: relative;
+  transform: scale(${glowScale});
+  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+/* Primary Glow Layer */
+.glow-layer {
+  background-color: oklch(${Math.round(lightness)}% ${chroma} ${hue});
+  filter: blur(120px);
+  /* Height controlled by mask size */
+  height: ${Math.round(900 * maskSize + 300)}px;
+  width: 100%;
+  opacity: 0.4;
+  border-radius: 9999px;
+}`;
+  };
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generateCSS());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  // Update Hex when sliders change (sync hex with OKLCH)
+  const handleSliderChange = (type: 'l' | 'c' | 'h', value: number) => {
+    let newL = lightness;
+    let newC = chroma;
+    let newH = hue;
+
+    if (type === 'l') {
+      newL = value;
+      setLightness(value);
+    } else if (type === 'c') {
+      newC = value;
+      setChroma(value);
+    } else {
+      newH = value;
+      setHue(value);
+    }
+
+    // Convert to Hex
+    const hex = oklchToHex(newL / 100, newC, newH);
+    setHexColor(hex.toUpperCase());
+  };
+
+  // Update Sliders when Hex changes
+  const handleHexChange = (value: string) => {
+    setHexColor(value);
+    
+    // Only update sliders if it's a valid hex
+    if (/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.test(value)) {
+      const { l, c, h } = hexToOklch(value);
+      setLightness(l * 100);
+      setChroma(c);
+      setHue(h);
+    }
+  };
+
+  // Random color generator
+  const handleSpotlightClick = () => {
+    setGlowEnabled(false);
+    setTimeout(() => {
+      const randomHex = "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+      handleHexChange(randomHex);
+      setTimeout(() => {
+        setGlowEnabled(true);
+      }, 90);
+    }, 950);
+  };
+
+  const tabs = [
+    { id: 'shape' as TabType, label: 'Shape' },
+    { id: 'color' as TabType, label: 'Color' },
+    { id: 'effects' as TabType, label: 'Effects' },
+    { id: 'glow' as TabType, label: 'Glow' },
+    { id: 'css' as TabType, label: 'CSS' },
+  ];
+
+  return (
+    <div className={cn(
+      "min-h-screen transition-colors duration-500",
+      isDark ? "bg-black" : "bg-zinc-50"
+    )}>
+      {/* Header */}
+      <header className={cn(
+        "border-b transition-colors",
+        isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white/50 border-zinc-200"
+      )}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              isDark ? "bg-gradient-to-br from-blue-500 to-purple-600" : "bg-gradient-to-br from-blue-400 to-purple-500"
+            )}>
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 3h18v18H3z" style={{ borderRadius: '30%' }} />
+              </svg>
+            </div>
+            <h1 className={cn(
+              "text-lg font-semibold transition-colors",
+              isDark ? "text-white" : "text-zinc-900"
+            )}>
+              Superellipse Generator Pro
+            </h1>
+          </div>
+          
+          <button
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              isDark ? "hover:bg-zinc-800 text-zinc-400" : "hover:bg-zinc-100 text-zinc-600"
+            )}
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex flex-col lg:flex-row max-w-7xl mx-auto">
+        {/* Left: Preview Area - Phone Frame */}
+        <div className="flex-1 p-4 sm:p-8 lg:p-12 min-h-[450px] flex items-center justify-center">
+          {/* Phone Frame */}
+          <div
+            className={cn(
+              "relative w-[290px] h-[350px] rounded-[40px] overflow-hidden shadow-2xl border-4 transition-colors duration-500",
+              isDark
+                ? "bg-[#050505] border-zinc-900"
+                : "bg-white border-zinc-100",
+            )}
+          >
+            {/* Glow Container */}
+            <motion.div
+              className="absolute w-[1700px] h-[2400px] pointer-events-none"
+              style={{
+                maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              }}
+              animate={{
+                opacity: glowEnabled ? 1 : 0,
+                scale: glowScale,
+                left: positionX,
+                top: positionY,
+              }}
+              transition={transition}
+            >
+              {/* Shape 1 (Large, Background) */}
+              <motion.div
+                className={cn(
+                  "absolute top-[400px] left-[300px] w-[1800px] rounded-full opacity-40",
+                  isDark ? "mix-blend-screen" : "mix-blend-normal",
+                )}
+                style={{
+                  backgroundColor: color,
+                  height: `${1800 * maskSize + 600}px`,
+                  filter: "blur(180px)",
+                }}
+                animate={{
+                  height: `${1800 * maskSize + 600}px`,
+                }}
+                transition={transition}
+              />
+
+              {/* Shape 2 (Medium) */}
+              <motion.div
+                className={cn(
+                  "absolute top-[600px] left-[460px] w-[1300px] h-[1300px] rounded-full opacity-60",
+                  isDark ? "mix-blend-screen" : "mix-blend-normal",
+                )}
+                style={{
+                  backgroundColor: color,
+                  filter: "blur(120px)",
+                }}
+                transition={transition}
+              />
+
+              {/* Shape 3 (Core Color) */}
+              <motion.div
+                className={cn(
+                  "absolute top-[700px] left-[560px] w-[1000px] h-[800px] rounded-full",
+                  isDark ? "mix-blend-screen" : "mix-blend-normal",
+                )}
+                style={{
+                  backgroundColor: color,
+                  filter: "blur(60px)",
+                  opacity: isDark ? 1 : 0.6,
+                }}
+                transition={transition}
+              />
+
+              {/* Highlight (White Core) */}
+              <motion.div
+                className="absolute top-[800px] left-[700px] w-[600px] h-[440px] rounded-full mix-blend-normal"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  filter: isDark ? "blur(80px)" : "blur(100px)",
+                }}
+                animate={{
+                  filter: isDark ? "blur(80px)" : "blur(120px)",
+                  opacity: isDark ? 0.4 : 0.7,
+                }}
+                transition={transition}
+              />
+            </motion.div>
+
+            {/* Noise Overlay */}
+            <motion.div
+              className="absolute inset-0 w-full h-full pointer-events-none z-[5] mix-blend-overlay"
+              style={{
+                backgroundImage: `url("${noiseSvg}")`,
+                backgroundRepeat: "repeat",
+                backgroundSize: "200px 200px",
+              }}
+              animate={{
+                opacity: noiseEnabled && glowEnabled ? noiseIntensity : 0,
+              }}
+              transition={transition}
+            />
+
+            {/* UI Overlay */}
+            <div className="absolute bottom-0 w-full p-6 pb-8 flex flex-col gap-4 z-10">
+
+              {/* Icon button */}
+              <div
+                className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 cursor-pointer hover:bg-white/20 transition-colors"
+                onClick={handleSpotlightClick}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={isDark ? "white" : "black"}
+                  strokeOpacity="0.8"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M15.295 19.562 16 22" />
+                  <path d="m17 16 3.758 2.098" />
+                  <path d="m19 12.5 3.026-.598" />
+                  <path d="M7.61 6.3a3 3 0 0 0-3.92 1.3l-1.38 2.79a3 3 0 0 0 1.3 3.91l6.89 3.597a1 1 0 0 0 1.342-.447l3.106-6.211a1 1 0 0 0-.447-1.341z" />
+                  <path d="M8 9V2" />
+                </svg>
+              </div>
+
+              {/* Text content */}
+              <div>
+                <div
+                  className={cn(
+                    "text-[10px] font-medium tracking-widest uppercase mb-1 transition-colors",
+                    isDark ? "text-white/60" : "text-black/60",
+                  )}
+                >
+                  Collaboration Hub
+                </div>
+                <h1
+                  className={cn(
+                    "text-xl font-bold leading-tight mb-2 transition-colors",
+                    isDark ? "text-white" : "text-black",
+                  )}
+                >
+                  Get More Done
+                  <br />
+                  Together
+                </h1>
+                <p
+                  className={cn(
+                    "text-xs leading-relaxed transition-colors",
+                    isDark ? "text-white/60" : "text-black/60",
+                  )}
+                >
+                  Stay aligned, share ideas, and keep every project moving smoothly.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  className={cn(
+                    "w-full h-10 rounded-full flex items-center justify-center gap-2 font-medium text-sm transition-colors",
+                    isDark
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "bg-black text-white hover:bg-black/90",
+                  )}
+                >
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                    <path
+                      d="M16.92 9.1875C16.92 8.6025 16.8675 8.04 16.77 7.5H9V10.695H13.44C13.245 11.7225 12.66 12.5925 11.7825 13.1775V15.255H14.46C16.02 13.815 16.92 11.7 16.92 9.1875Z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M9 17.25C11.2275 17.25 13.095 16.515 14.46 15.255L11.7825 13.1775C11.0475 13.6725 10.11 13.9725 9 13.9725C6.855 13.9725 5.0325 12.525 4.38 10.575H1.635V12.705C2.9925 15.3975 5.775 17.25 9 17.25Z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M4.38 10.5675C4.215 10.0725 4.1175 9.5475 4.1175 9C4.1175 8.4525 4.215 7.9275 4.38 7.4325V5.3025H1.635C1.0725 6.4125 0.75 7.665 0.75 9C0.75 10.335 1.0725 11.5875 1.635 12.6975L3.7725 11.0325L4.38 10.5675Z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M9 4.035C10.215 4.035 11.295 4.455 12.1575 5.265L14.52 2.9025C13.0875 1.5675 11.2275 0.75 9 0.75C5.775 0.75 2.9925 2.6025 1.635 5.3025L4.38 7.4325C5.0325 5.4825 6.855 4.035 9 4.035Z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                  Continue With Google
+                </button>
+                <button
+                  className={cn(
+                    "w-full h-10 rounded-full flex items-center justify-center font-medium text-sm transition-colors",
+                    isDark
+                      ? "bg-white/10 text-white/80 hover:bg-white/20"
+                      : "bg-black/5 text-black/60 hover:bg-black/10",
+                  )}
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+
+            {/* Footer link */}
+            <a
+              href="https://ap.cx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] z-10 transition-colors opacity-50 hover:opacity-80",
+                isDark ? "text-white/50" : "text-black/40",
+              )}
+            >
+              ap.cx
+            </a>
+          </div>
+        </div>
+
+        {/* Right: Control Panel */}
+        <div className={cn(
+          "w-full lg:w-96 border-l transition-colors",
+          isDark ? "bg-zinc-900/50 border-zinc-800" : "bg-white/50 border-zinc-200"
+        )}>
+          <div className="sticky top-0">
+            {/* Tabs */}
+            <div className={cn(
+              "border-b transition-colors overflow-x-auto",
+              isDark ? "border-zinc-800" : "border-zinc-200"
+            )}>
+              <div className="flex">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                      activeTab === tab.id
+                        ? isDark
+                          ? "border-blue-500 text-blue-400"
+                          : "border-blue-600 text-blue-600"
+                        : isDark
+                          ? "border-transparent text-zinc-500 hover:text-zinc-300"
+                          : "border-transparent text-zinc-600 hover:text-zinc-900"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              {activeTab === 'shape' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className={cn(
+                      "text-lg font-semibold mb-4",
+                      isDark ? "text-white" : "text-zinc-900"
+                    )}>
+                      Shape Parameters
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Exponent
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {exponent.toFixed(1)}
+                          </span>
+                        </div>
+                        <Slider
+                          value={[exponent]}
+                          onValueChange={(v) => setExponent(v[0])}
+                          min={2}
+                          max={10}
+                          step={0.1}
+                        />
+                        <p className="text-xs text-zinc-500 mt-1">
+                          2 = ellipse, 4 = superellipse, 10 = square
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Size
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {size}px
+                          </span>
+                        </div>
+                        <Slider
+                          value={[size]}
+                          onValueChange={(v) => setSize(v[0])}
+                          min={100}
+                          max={400}
+                          step={10}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Rotation
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {rotation}°
+                          </span>
+                        </div>
+                        <Slider
+                          value={[rotation]}
+                          onValueChange={(v) => setRotation(v[0])}
+                          min={0}
+                          max={360}
+                          step={1}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'color' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className={cn(
+                      "text-lg font-semibold mb-4",
+                      isDark ? "text-white" : "text-zinc-900"
+                    )}>
+                      Color Settings
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                        <div
+                          className="w-12 h-12 rounded-lg border-2 border-white/20 shadow-lg"
+                          style={{ backgroundColor: color }}
+                        />
+                        <div className="flex-1">
+                          <div className="text-xs text-zinc-500">Current Color</div>
+                          <div className="font-mono text-sm">{color}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Lightness
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {lightness}%
+                          </span>
+                        </div>
+                        <Slider
+                          value={[lightness]}
+                          onValueChange={(v) => handleSliderChange('l', v[0])}
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Chroma
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {chroma.toFixed(3)}
+                          </span>
+                        </div>
+                        <Slider
+                          value={[chroma]}
+                          onValueChange={(v) => handleSliderChange('c', v[0])}
+                          min={0}
+                          max={0.4}
+                          step={0.001}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Hue
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {hue}°
+                          </span>
+                        </div>
+                        <Slider
+                          value={[hue]}
+                          onValueChange={(v) => handleSliderChange('h', v[0])}
+                          min={0}
+                          max={360}
+                          step={1}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'effects' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className={cn(
+                      "text-lg font-semibold mb-4",
+                      isDark ? "text-white" : "text-zinc-900"
+                    )}>
+                      Visual Effects
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Blur
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {blur}px
+                          </span>
+                        </div>
+                        <Slider
+                          value={[blur]}
+                          onValueChange={(v) => setBlur(v[0])}
+                          min={0}
+                          max={20}
+                          step={1}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Opacity
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {opacity}%
+                          </span>
+                        </div>
+                        <Slider
+                          value={[opacity]}
+                          onValueChange={(v) => setOpacity(v[0])}
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <label className={isDark ? "text-zinc-400" : "text-zinc-600"}>
+                            Shadow
+                          </label>
+                          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                            {shadow}px
+                          </span>
+                        </div>
+                        <Slider
+                          value={[shadow]}
+                          onValueChange={(v) => setShadow(v[0])}
+                          min={0}
+                          max={50}
+                          step={1}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'glow' && (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className={cn("text-xl font-semibold tracking-tight", isDark ? "text-white" : "text-zinc-900")}>Glow Editor</h2>
+                      <p className="text-sm text-zinc-500">CSS Progressive Blur</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-zinc-500 tracking-wider uppercase">Power</span>
+                      <Switch 
+                        checked={glowEnabled} 
+                        onCheckedChange={setGlowEnabled}
+                        className="data-[state=unchecked]:bg-zinc-950 border border-white/10 transition-colors duration-300"
+                        style={{ 
+                          backgroundColor: glowEnabled ? hexColor : undefined,
+                          borderColor: glowEnabled ? hexColor : undefined
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Theme Mode */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-400">Theme Mode</label>
+                    <Select value={theme} onValueChange={(v: 'dark' | 'light') => setTheme(v)}>
+                      <SelectTrigger className={cn("w-full h-9 rounded-lg", isDark ? "bg-zinc-950 border-zinc-800 text-zinc-300" : "bg-zinc-100 border-zinc-300 text-zinc-700")}>
+                        <SelectValue placeholder="Select theme" />
+                      </SelectTrigger>
+                      <SelectContent className={cn(isDark ? "bg-zinc-950 border-zinc-800 text-zinc-300" : "bg-white border-zinc-300 text-zinc-700")}>
+                        <SelectItem value="dark">Dark Mode</SelectItem>
+                        <SelectItem value="light">Light Mode</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Base Color */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className={cn("text-sm font-medium", isDark ? "text-zinc-400" : "text-zinc-600")}>Base Color</label>
+                      <div className={cn("flex items-center gap-2 border rounded-lg p-1 pr-3 h-8", isDark ? "bg-zinc-950 border-zinc-800" : "bg-zinc-100 border-zinc-300")}>
+                        <div 
+                          className="w-6 h-6 rounded-md border border-white/20 shadow-inner"
+                          style={{ backgroundColor: hexColor }}
+                        />
+                        <input 
+                          type="text" 
+                          value={hexColor}
+                          onChange={(e) => handleHexChange(e.target.value)}
+                          className={cn("bg-transparent border-none outline-none text-xs w-16 uppercase font-mono", isDark ? "text-zinc-300" : "text-zinc-700")}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sliders with colored backgrounds */}
+                    <div className="space-y-4">
+                      {/* Lightness */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-zinc-500">
+                          <span>Lightness</span>
+                          <span>{Math.round(lightness)}%</span>
+                        </div>
+                        <div className="relative h-4 w-full">
+                          <div className="absolute inset-0 rounded-full bg-zinc-900 overflow-hidden pointer-events-none">
+                            <div className="absolute inset-0 bg-gradient-to-r from-black to-white opacity-20" />
+                          </div>
+                          <Slider 
+                            value={[lightness]} 
+                            onValueChange={(v) => handleSliderChange('l', v[0])} 
+                            max={100} 
+                            step={1}
+                            className="[&_[data-slot=slider-track]]:bg-transparent [&_[data-slot=slider-range]]:bg-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Chroma */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-zinc-500">
+                          <span>Chroma</span>
+                          <span>{chroma.toFixed(3)}</span>
+                        </div>
+                        <div className="relative h-4 w-full">
+                          <div className="absolute inset-0 rounded-full bg-zinc-900 overflow-hidden pointer-events-none">
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-500 to-[oklch(0.6_0.3_0)] opacity-20" />
+                          </div>
+                          <Slider 
+                            value={[chroma]} 
+                            onValueChange={(v) => handleSliderChange('c', v[0])} 
+                            max={0.4} 
+                            step={0.001}
+                            className="[&_[data-slot=slider-track]]:bg-transparent [&_[data-slot=slider-range]]:bg-transparent"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Hue */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-zinc-500">
+                          <span>Hue</span>
+                          <span>{Math.round(hue)}°</span>
+                        </div>
+                        <div className="relative h-4 w-full">
+                          <div className="absolute inset-0 rounded-full bg-zinc-900 overflow-hidden pointer-events-none">
+                            <div 
+                              className="absolute inset-0 opacity-80" 
+                              style={{
+                                background: 'linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)'
+                              }}
+                            />
+                          </div>
+                          <Slider 
+                            value={[hue]} 
+                            onValueChange={(v) => handleSliderChange('h', v[0])} 
+                            max={360} 
+                            step={1}
+                            className="[&_[data-slot=slider-track]]:bg-transparent [&_[data-slot=slider-range]]:bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shape Configuration Collapsible */}
+                  <div className="space-y-4 pt-4 border-t border-white/5">
+                    <Collapsible open={isShapeOpen} onOpenChange={setIsShapeOpen} className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <button className={cn("flex items-center justify-between w-full text-sm font-medium transition-colors group", isDark ? "text-zinc-400 hover:text-zinc-300" : "text-zinc-600 hover:text-zinc-900")}>
+                          <span>Shape Configuration</span>
+                          <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isShapeOpen && "rotate-180")} />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-3 pt-3">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-zinc-500">
+                              <span>Gradient Mask Size</span>
+                              <span>{Math.round(maskSize * 100)}%</span>
+                            </div>
+                            <Slider 
+                              value={[maskSize]} 
+                              onValueChange={(v) => setMaskSize(v[0])} 
+                              max={1} 
+                              step={0.01}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-zinc-500">
+                              <span>Glow Scale</span>
+                              <span>{glowScale.toFixed(1)}x</span>
+                            </div>
+                            <Slider 
+                              value={[glowScale]} 
+                              onValueChange={(v) => setGlowScale(v[0])} 
+                              min={0.5}
+                              max={3} 
+                              step={0.1}
+                            />
+                          </div>
+
+                          {/* Noise Toggle */}
+                          <div className="flex items-center justify-between pt-2">
+                            <label className="text-xs text-zinc-500">Noise Overlay</label>
+                            <Switch 
+                              checked={noiseEnabled} 
+                              onCheckedChange={setNoiseEnabled}
+                              className="data-[state=unchecked]:bg-zinc-950 border border-white/10"
+                            />
+                          </div>
+
+                          {/* Noise Intensity Slider */}
+                          {noiseEnabled && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-xs text-zinc-500">
+                                <span>Noise Intensity</span>
+                                <span>{Math.round(noiseIntensity * 100)}%</span>
+                              </div>
+                              <Slider 
+                                value={[noiseIntensity]} 
+                                onValueChange={(v) => setNoiseIntensity(v[0])} 
+                                min={0}
+                                max={1} 
+                                step={0.01}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+
+                  {/* Glow Position */}
+                  <div className="pt-4 border-t border-white/5">
+                    <Collapsible open={isPositionOpen} onOpenChange={setIsPositionOpen} className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <button className={cn("flex items-center justify-between w-full text-sm font-medium transition-colors group", isDark ? "text-zinc-400 hover:text-zinc-300" : "text-zinc-600 hover:text-zinc-900")}>
+                          <span>Glow Position</span>
+                          <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isPositionOpen && "rotate-180")} />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="space-y-3 mt-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-zinc-500">
+                              <span>Horizontal (X)</span>
+                              <span>{positionX}px</span>
+                            </div>
+                            <Slider 
+                              value={[positionX]} 
+                              onValueChange={(v) => setPositionX(v[0])} 
+                              min={-800}
+                              max={-350} 
+                              step={5}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-zinc-500">
+                              <span>Vertical (Y)</span>
+                              <span>{positionY}px</span>
+                            </div>
+                            <Slider 
+                              value={[positionY]} 
+                              onValueChange={(v) => setPositionY(v[0])} 
+                              min={-1400}
+                              max={-600} 
+                              step={5}
+                            />
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+
+                  {/* Footer Info */}
+                  <div className="pt-2 flex flex-col gap-4">
+                    <div className="text-xs text-zinc-600 flex justify-center gap-4">
+                      <span>Simulating CSS <code className={cn("px-1 py-0.5 rounded", isDark ? "bg-zinc-950 text-zinc-500" : "bg-zinc-200 text-zinc-600")}>backdrop-filter</code> & <code className={cn("px-1 py-0.5 rounded", isDark ? "bg-zinc-950 text-zinc-500" : "bg-zinc-200 text-zinc-600")}>mask-image</code></span>
+                    </div>
+
+                    <Collapsible open={isCSSOpen} onOpenChange={setIsCSSOpen} className="w-full">
+                      <CollapsibleTrigger asChild>
+                        <button className="flex items-center justify-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors w-full py-2 group">
+                          <Code className="w-3 h-3" />
+                          <span className="border-b border-transparent group-hover:border-zinc-500/50">View CSS Code</span>
+                          <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", isCSSOpen && "rotate-180")} />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className={cn("mt-2 relative border rounded-lg overflow-hidden", isDark ? "bg-zinc-950/50 border-white/5" : "bg-zinc-100 border-zinc-300")}>
+                          <div className="absolute top-2 right-2 z-10">
+                            <button 
+                              onClick={handleCopy}
+                              className="p-1.5 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                            >
+                              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                          <pre className="p-4 text-[10px] leading-relaxed font-mono text-zinc-400 overflow-x-auto">
+                            {generateCSS()}
+                          </pre>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'css' && (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={cn(
+                        "text-lg font-semibold",
+                        isDark ? "text-white" : "text-zinc-900"
+                      )}>
+                        Generated CSS
+                      </h3>
+                      <button
+                        onClick={handleCopy}
+                        className={cn(
+                          "p-2 rounded-lg transition-colors",
+                          isDark
+                            ? "hover:bg-zinc-800 text-zinc-400"
+                            : "hover:bg-zinc-100 text-zinc-600"
+                        )}
+                        title="Copy CSS"
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    <div className={cn(
+                      "rounded-lg border p-4 overflow-x-auto",
+                      isDark
+                        ? "bg-zinc-950 border-zinc-800"
+                        : "bg-zinc-50 border-zinc-200"
+                    )}>
+                      <pre className="text-xs font-mono">
+                        <code className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+                          {generateCSS()}
+                        </code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reset Button */}
+              <div className="pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-700">
+                <button
+                  onClick={resetParameters}
+                  className={cn(
+                    "w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2",
+                    isDark
+                      ? "bg-zinc-800 hover:bg-zinc-700 text-white"
+                      : "bg-zinc-200 hover:bg-zinc-300 text-zinc-900"
+                  )}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reset Parameters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -29,7 +29,9 @@ const ANIMATION_TIMINGS = {
 const GlowLayer = memo<{
   layer: typeof GLOW_LAYERS[number];
   color: string;
-}>(({ layer, color }) => (
+  customBlur?: number;
+  customOpacity?: number;
+}>(({ layer, color, customBlur, customOpacity }) => (
   <div
     className="absolute rounded-full transition-all duration-300 will-change-transform"
     style={{
@@ -37,10 +39,10 @@ const GlowLayer = memo<{
       left: `${layer.left}px`,
       width: `${layer.width}px`,
       height: `${layer.height}px`,
-      filter: `blur(${layer.blur}px)`,
+      filter: `blur(${customBlur ?? layer.blur}px)`,
       background: color,
       mixBlendMode: 'screen',
-      opacity: layer.opacity,
+      opacity: (customOpacity ?? layer.opacity),
     }}
     aria-hidden="true"
   />
@@ -81,11 +83,12 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
   // Memoize glow container styles
   const glowContainerStyle = useMemo(() => ({
     maskImage: 'linear-gradient(black 30%, transparent 100%)',
-    left: '-590px',
-    top: '-1070px',
-    opacity: state.enabled ? glowOpacity : 0,
-    transform: `scale(${state.glowScale * 0.75})`,
-  }), [state.enabled, state.glowScale, glowOpacity]);
+    WebkitMaskImage: 'linear-gradient(black 30%, transparent 100%)',
+    left: `${state.glowPositionX}px`,
+    top: `${state.glowPositionY}px`,
+    opacity: (state.enabled ? glowOpacity : 0) * (state.glowOpacity / 100),
+    transform: `scale(${state.glowScale})`,
+  }), [state.enabled, state.glowScale, state.glowPositionX, state.glowPositionY, state.glowOpacity, glowOpacity]);
 
   // Memoize noise overlay styles
   const noiseStyle = useMemo(() => ({
@@ -125,10 +128,46 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
 
       {/* Phone Frame */}
       <div 
-        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-colors duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] border-border border-4 rounded-[40px] relative shadow-2xl"
+        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] border-border border-4 rounded-[40px] relative shadow-2xl"
         role="presentation"
         aria-label="Mobile preview frame"
+        style={{
+          width: `${state.width}px`,
+          height: `${state.height}px`,
+          clipPath: `path('${pathData}')`,
+          backgroundColor: state.colorMode === 'solid' ? state.solidColor : 'transparent',
+          opacity: state.colorMode === 'solid' ? state.solidOpacity / 100 : 1,
+          background: state.colorMode === 'linear' 
+            ? `linear-gradient(${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : state.colorMode === 'radial'
+            ? `radial-gradient(circle, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : state.colorMode === 'conic'
+            ? `conic-gradient(from ${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
+            : undefined,
+          filter: state.blur > 0 ? `blur(${state.blur}px)` : undefined,
+          backdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+          WebkitBackdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+          border: state.borderEnabled 
+            ? `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`
+            : '4px solid var(--border)',
+          borderColor: state.borderEnabled ? state.strokeColor : undefined,
+          borderStyle: state.borderEnabled ? state.strokeStyle : 'solid',
+          borderWidth: state.borderEnabled ? `${state.strokeWidth}px` : '4px',
+          outline: state.borderEnabled ? 'none' : undefined,
+          boxShadow: state.borderEnabled ? `0 0 0 0 transparent, inset 0 0 0 0 transparent` : undefined,
+        }}
       >
+        {/* Stroke Layer for Opacity */}
+        {state.borderEnabled && (
+          <div 
+            className="absolute inset-0 pointer-events-none z-[15]"
+            style={{
+              clipPath: `path('${pathData}')`,
+              border: `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`,
+              opacity: state.strokeOpacity / 100,
+            }}
+          />
+        )}
         
         {/* Glow Container - 4-layer progressive blur system */}
         <div 
@@ -141,6 +180,7 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
               key={`glow-layer-${index}`}
               layer={layer}
               color={layer.colorIndex === -1 ? glowColors[3] : glowColors[layer.colorIndex]}
+              customBlur={index === 1 ? state.glowBlur : undefined}
             />
           ))}
         </div>
