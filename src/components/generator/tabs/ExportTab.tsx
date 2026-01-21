@@ -169,34 +169,43 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
   const handleDownloadPNG = useCallback(async () => {
     setDownloadingPNG(true);
     try {
-      // PNG export implementation (placeholder)
       const svg = generateSVG(state, pathData);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const img = new window.Image();
+      if (!ctx) throw new Error('Could not get canvas context');
       
+      const img = new window.Image();
+      const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
       img.onload = () => {
         canvas.width = state.width;
         canvas.height = state.height;
-        ctx?.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0);
         canvas.toBlob((blob) => {
           if (blob) {
-            const url = URL.createObjectURL(blob);
+            const pngUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
+            link.href = pngUrl;
             link.download = `superellipse-${Date.now()}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(pngUrl);
           }
           setDownloadingPNG(false);
-        });
+          URL.revokeObjectURL(url);
+        }, 'image/png');
       };
       
-      img.src = 'data:image/svg+xml;base64,' + btoa(svg);
+      img.onerror = () => {
+        throw new Error('Failed to load image for PNG export');
+      };
+
+      img.src = url;
     } catch (error) {
       console.error('PNG export failed:', error);
+      alert('Failed to export PNG. Please try again.');
       setDownloadingPNG(false);
     }
   }, [state, pathData]);

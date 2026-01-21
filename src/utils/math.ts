@@ -99,6 +99,9 @@ export function getSuperellipsePath(
     const x = a * Math.sign(cosT) * Math.pow(Math.abs(cosT), 2 / n);
     const y = b * Math.sign(sinT) * Math.pow(Math.abs(sinT), 2 / n);
     
+    // Memoization could be added here if this was in a component, 
+    // but for the utility function we ensure precision and validity.
+    
     // Translate to center
     const finalX = (x + a).toFixed(precision);
     const finalY = (y + b).toFixed(precision);

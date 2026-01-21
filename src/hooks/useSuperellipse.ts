@@ -105,7 +105,7 @@ export function useSuperellipse() {
   const [state, setState] = useState<SuperellipseState>(DEFAULT_STATE);
 
   const pathData = useMemo(() => {
-    return getSuperellipsePath(state.width, state.height, state.exp);
+    return getSuperellipsePath(state.width, state.height, state.exp, { steps: state.width > 500 ? 720 : 360 });
   }, [state.width, state.height, state.exp]);
 
   const updateState = (updates: Partial<SuperellipseState>) => {
