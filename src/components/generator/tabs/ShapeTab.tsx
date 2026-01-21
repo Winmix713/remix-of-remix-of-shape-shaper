@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Lock, Unlock, ChevronDown, ChevronUp } from 'lucide-react';
+import { SuperellipseState, CornerExponents } from '../../../hooks/useSuperellipse';
+import { CornerControls } from '../CornerControls';
+import { PathPreview } from '../PathPreview';
+import { getSuperellipsePath, getAsymmetricSuperellipsePath } from '../../../utils/math';
 
 // ============================================================================
 // TYPES
 // ============================================================================
-
-interface SuperellipseState {
-  width: number;
-  height: number;
-  exp: number;
-  [key: string]: any;
-}
 
 interface ShapeTabProps {
   state: SuperellipseState;
@@ -208,6 +205,14 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
     setInputHeight(state.height.toString());
   }, [state.width, state.height]);
 
+  // Compute path data for preview
+  const pathData = useMemo(() => {
+    if (state.useAsymmetricCorners && state.cornerExponents) {
+      return getAsymmetricSuperellipsePath(state.width, state.height, state.cornerExponents);
+    }
+    return getSuperellipsePath(state.width, state.height, state.exp);
+  }, [state.width, state.height, state.exp, state.useAsymmetricCorners, state.cornerExponents]);
+
   // Debounced dimension update
   const updateDimensions = useCallback((width: number, height: number) => {
     updateState({ 
@@ -247,6 +252,15 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
   const toggleAspectLock = useCallback(() => {
     setAspectLocked(prev => !prev);
   }, []);
+
+  const handleCornerChange = useCallback((corner: keyof CornerExponents, value: number) => {
+    updateState({
+      cornerExponents: {
+        ...state.cornerExponents,
+        [corner]: value,
+      },
+    });
+  }, [state.cornerExponents, updateState]);
 
   const exponentDescription = useMemo(() => getExponentDescription(state.exp), [state.exp]);
 
@@ -339,6 +353,34 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
             </p>
           </div>
         </div>
+      </CollapsibleSection>
+
+      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+
+      {/* Asymmetric Corners */}
+      <CollapsibleSection title="Corner Control" defaultOpen={false}>
+        <CornerControls
+          useAsymmetric={state.useAsymmetricCorners || false}
+          uniformExp={state.exp}
+          cornerExponents={state.cornerExponents || { topLeft: 4, topRight: 4, bottomLeft: 4, bottomRight: 4 }}
+          onToggleAsymmetric={(val) => updateState({ useAsymmetricCorners: val })}
+          onUniformChange={(val) => updateState({ exp: val })}
+          onCornerChange={handleCornerChange}
+        />
+      </CollapsibleSection>
+
+      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+
+      {/* Path Preview */}
+      <CollapsibleSection title="Path Preview" defaultOpen={true}>
+        <PathPreview
+          width={state.width}
+          height={state.height}
+          exp={state.exp}
+          useAsymmetric={state.useAsymmetricCorners || false}
+          cornerExponents={state.cornerExponents || { topLeft: 4, topRight: 4, bottomLeft: 4, bottomRight: 4 }}
+          pathData={pathData}
+        />
       </CollapsibleSection>
 
       <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
