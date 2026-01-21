@@ -75,22 +75,25 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   children 
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const sectionId = React.useId();
 
   return (
     <div className="space-y-3">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors px-1"
+        className="w-full flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors px-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
         aria-expanded={isOpen}
+        aria-controls={sectionId}
+        aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${title} section`}
       >
         <span>{title}</span>
         {isOpen ? (
-          <ChevronUp className="w-3.5 h-3.5" />
+          <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
         ) : (
-          <ChevronDown className="w-3.5 h-3.5" />
+          <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
         )}
       </button>
-      {isOpen && <div className="space-y-3">{children}</div>}
+      {isOpen && <div id={sectionId} className="space-y-3">{children}</div>}
     </div>
   );
 };
@@ -115,6 +118,8 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
   description,
 }) => {
   const [localValue, setLocalValue] = useState(value.toString());
+  const sliderId = React.useId();
+  const descriptionId = React.useId();
 
   useEffect(() => {
     setLocalValue(value.toString());
@@ -145,10 +150,11 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor={sliderId} className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
           {label}
         </label>
         <input
+          id={`${sliderId}-input`}
           type="number"
           value={localValue}
           onChange={handleInputChange}
@@ -157,24 +163,31 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
           max={max}
           step={step}
           className="w-16 px-2 py-1 text-xs text-right bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          aria-label={`${label} value input`}
         />
       </div>
       <div className="relative">
         <input
+          id={sliderId}
           type="range"
           min={min}
           max={max}
           step={step}
           value={value}
           onChange={handleSliderChange}
-          className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer slider"
+          className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           style={{
             background: `linear-gradient(to right, rgb(99 102 241) 0%, rgb(99 102 241) ${percentage}%, rgb(228 228 231) ${percentage}%, rgb(228 228 231) 100%)`,
           }}
+          aria-label={label}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value}
+          aria-describedby={description ? descriptionId : undefined}
         />
       </div>
       {description && (
-        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 px-1 leading-relaxed">
+        <p id={descriptionId} className="text-[10px] text-zinc-500 dark:text-zinc-400 px-1 leading-relaxed">
           {description}
         </p>
       )}
@@ -396,11 +409,12 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
                 <button
                   key={preset.label}
                   onClick={() => updateState({ width: preset.w, height: preset.h })}
-                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   title={`${preset.w}×${preset.h}px`}
+                  aria-label={`Set size to ${preset.label}: ${preset.w} by ${preset.h} pixels`}
                 >
                   <div className="font-semibold">{preset.label}</div>
-                  <div className="text-[9px] text-zinc-500">{preset.w}×{preset.h}</div>
+                  <div className="text-[9px] text-zinc-500" aria-hidden="true">{preset.w}×{preset.h}</div>
                 </button>
               ))}
             </div>
@@ -414,11 +428,12 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
                 <button
                   key={preset.label}
                   onClick={() => updateState({ width: preset.w, height: preset.h })}
-                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   title={`${preset.w}×${preset.h}px`}
+                  aria-label={`Set size to ${preset.label}: ${preset.w} by ${preset.h} pixels`}
                 >
                   <div className="font-semibold">{preset.label}</div>
-                  <div className="text-[9px] text-zinc-500">{preset.w}×{preset.h}</div>
+                  <div className="text-[9px] text-zinc-500" aria-hidden="true">{preset.w}×{preset.h}</div>
                 </button>
               ))}
             </div>
@@ -432,11 +447,12 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
                 <button
                   key={preset.label}
                   onClick={() => updateState({ width: preset.w, height: preset.h })}
-                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   title={`${preset.w}×${preset.h}px`}
+                  aria-label={`Set size to ${preset.label}: ${preset.w} by ${preset.h} pixels`}
                 >
                   <div className="font-semibold">{preset.label}</div>
-                  <div className="text-[9px] text-zinc-500">{preset.w}×{preset.h}</div>
+                  <div className="text-[9px] text-zinc-500" aria-hidden="true">{preset.w}×{preset.h}</div>
                 </button>
               ))}
             </div>

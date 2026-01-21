@@ -21,25 +21,32 @@ const CornerSlider = memo<{
   position: 'tl' | 'tr' | 'bl' | 'br';
 }>(({ label, value, onChange, position }) => {
   const percentage = ((value - MIN_EXP) / (MAX_EXP - MIN_EXP)) * 100;
+  const sliderId = React.useId();
   
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium text-zinc-500">{label}</span>
-        <span className="text-[10px] font-mono text-zinc-400">{value.toFixed(1)}</span>
+        <label htmlFor={sliderId} className="text-[10px] font-medium text-zinc-500">{label}</label>
+        <span className="text-[10px] font-mono text-zinc-400" aria-live="polite">{value.toFixed(1)}</span>
       </div>
       <div className="relative">
         <input
+          id={sliderId}
           type="range"
           min={MIN_EXP}
           max={MAX_EXP}
           step={0.1}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full appearance-none cursor-pointer"
+          className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           style={{
             background: `linear-gradient(to right, rgb(99 102 241) 0%, rgb(99 102 241) ${percentage}%, rgb(228 228 231) ${percentage}%, rgb(228 228 231) 100%)`,
           }}
+          aria-label={`${label} corner exponent`}
+          aria-valuemin={MIN_EXP}
+          aria-valuemax={MAX_EXP}
+          aria-valuenow={value}
+          aria-valuetext={value.toFixed(1)}
         />
       </div>
     </div>
@@ -77,7 +84,10 @@ export const CornerControls = memo<CornerControlsProps>(({
         </div>
         <button
           onClick={() => onToggleAsymmetric(!useAsymmetric)}
-          className={`relative w-10 h-6 rounded-full transition-all ${
+          role="switch"
+          aria-checked={useAsymmetric}
+          aria-label="Toggle asymmetric corners mode"
+          className={`relative w-10 h-6 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
             useAsymmetric ? 'bg-indigo-500' : 'bg-zinc-200 dark:bg-zinc-700'
           }`}
         >
@@ -87,6 +97,7 @@ export const CornerControls = memo<CornerControlsProps>(({
               transform: useAsymmetric ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
               margin: '0.25rem',
             }}
+            aria-hidden="true"
           />
         </button>
       </div>

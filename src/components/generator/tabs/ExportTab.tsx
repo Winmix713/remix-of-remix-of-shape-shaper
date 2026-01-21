@@ -101,29 +101,35 @@ const CopyButton: React.FC<CopyButtonProps> = ({
   }, [content, onSuccess, onError]);
 
   return (
-    <button
-      onClick={handleCopy}
-      aria-label={`${label} to clipboard`}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-      disabled={copied || error}
-    >
-      {copied ? (
-        <>
-          <Check className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-green-500">Copied!</span>
-        </>
-      ) : error ? (
-        <>
-          <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-red-500">Failed</span>
-        </>
-      ) : (
-        <>
-          <Copy className="w-3.5 h-3.5" />
-          {label}
-        </>
-      )}
-    </button>
+    <>
+      <button
+        onClick={handleCopy}
+        aria-label={`${label} to clipboard`}
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        disabled={copied || error}
+      >
+        {copied ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-green-500" aria-hidden="true" />
+            <span className="text-green-500">Copied!</span>
+          </>
+        ) : error ? (
+          <>
+            <AlertCircle className="w-3.5 h-3.5 text-red-500" aria-hidden="true" />
+            <span className="text-red-500">Failed</span>
+          </>
+        ) : (
+          <>
+            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+            {label}
+          </>
+        )}
+      </button>
+      {/* Live region for screen readers */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {copied ? 'Content copied to clipboard' : error ? 'Failed to copy content' : ''}
+      </div>
+    </>
   );
 };
 
@@ -289,9 +295,9 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
         <button
           onClick={handleDownloadSVG}
           aria-label="Download current superellipse as SVG"
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-b from-indigo-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-indigo-500/20 hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98] transition-all"
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-b from-indigo-500 to-indigo-600 text-white text-sm font-medium shadow-lg shadow-indigo-500/20 hover:from-indigo-600 hover:to-indigo-700 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          <Image className="w-4 h-4" />
+          <Image className="w-4 h-4" aria-hidden="true" />
           SVG
         </button>
         
@@ -299,11 +305,17 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
           onClick={handleDownloadPNG}
           disabled={downloadingPNG}
           aria-label="Download current superellipse as PNG"
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-[0.98] transition-all disabled:opacity-50"
+          aria-busy={downloadingPNG}
+          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4" aria-hidden="true" />
           {downloadingPNG ? 'Processing...' : 'PNG'}
         </button>
+      </div>
+      
+      {/* Live region for download status */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {downloadingPNG ? 'Generating PNG image, please wait' : ''}
       </div>
 
       {/* CSS Export */}
@@ -313,9 +325,9 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
             onClick={() => setShowCSS(!showCSS)}
             aria-expanded={showCSS}
             aria-controls="css-code-block"
-            className="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
           >
-            <FileCode className="w-4 h-4" />
+            <FileCode className="w-4 h-4" aria-hidden="true" />
             CSS Code
           </button>
           <CopyButton content={cssCode} label="Copy CSS" />
@@ -336,9 +348,9 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
             onClick={() => setShowJSON(!showJSON)}
             aria-expanded={showJSON}
             aria-controls="json-code-block"
-            className="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
           >
-            <FileJson className="w-4 h-4" />
+            <FileJson className="w-4 h-4" aria-hidden="true" />
             JSON Configuration
           </button>
           <CopyButton content={jsonCode} label="Copy JSON" />
