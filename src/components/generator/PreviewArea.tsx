@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo, type FC } from 'react';
+import { useState, useCallback, useMemo, memo, type FC, type CSSProperties } from 'react';
 import { SuperellipseState } from '../../hooks/useSuperellipse';
 import { SpotlightButton } from './SpotlightButton';
 
@@ -40,7 +40,7 @@ const GlowLayer = memo<{
       width: `${layer.width}px`,
       height: `${layer.height}px`,
       filter: `blur(${customBlur ?? layer.blur}px)`,
-      background: color,
+      backgroundColor: color,
       mixBlendMode: 'screen',
       opacity: (customOpacity ?? layer.opacity),
     }}
@@ -97,7 +97,75 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
     opacity: state.noiseIntensity / 100,
   }), [state.noiseIntensity]);
 
-  // Optimized spotlight trigger with cleanup
+  // JAVÍTÁS: Memoized phone frame styles - NINCS backgroundColor és background konfliktus
+  const phoneFrameStyle = useMemo((): CSSProperties => {
+    const baseStyle: CSSProperties = {
+      width: `${state.width}px`,
+      height: `${state.height}px`,
+      clipPath: `path('${pathData}')`,
+      filter: state.blur > 0 ? `blur(${state.blur}px)` : undefined,
+      backdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+      WebkitBackdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
+    };
+
+    // Border kezelés
+    if (state.borderEnabled) {
+      baseStyle.borderTopWidth = `${state.strokeWidth}px`;
+      baseStyle.borderRightWidth = `${state.strokeWidth}px`;
+      baseStyle.borderBottomWidth = `${state.strokeWidth}px`;
+      baseStyle.borderLeftWidth = `${state.strokeWidth}px`;
+      baseStyle.borderTopStyle = state.strokeStyle;
+      baseStyle.borderRightStyle = state.strokeStyle;
+      baseStyle.borderBottomStyle = state.strokeStyle;
+      baseStyle.borderLeftStyle = state.strokeStyle;
+      baseStyle.borderTopColor = state.strokeColor;
+      baseStyle.borderRightColor = state.strokeColor;
+      baseStyle.borderBottomColor = state.strokeColor;
+      baseStyle.borderLeftColor = state.strokeColor;
+      baseStyle.outline = 'none';
+      baseStyle.boxShadow = '0 0 0 0 transparent, inset 0 0 0 0 transparent';
+    } else {
+      baseStyle.borderTopWidth = '4px';
+      baseStyle.borderRightWidth = '4px';
+      baseStyle.borderBottomWidth = '4px';
+      baseStyle.borderLeftWidth = '4px';
+      baseStyle.borderTopStyle = 'solid';
+      baseStyle.borderRightStyle = 'solid';
+      baseStyle.borderBottomStyle = 'solid';
+      baseStyle.borderLeftStyle = 'solid';
+    }
+
+    // Color mode kezelés - JAVÍTVA: csak egy background property
+    if (state.colorMode === 'solid') {
+      baseStyle.backgroundColor = state.solidColor;
+      baseStyle.opacity = state.solidOpacity / 100;
+    } else if (state.colorMode === 'linear') {
+      baseStyle.backgroundImage = `linear-gradient(${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+    } else if (state.colorMode === 'radial') {
+      baseStyle.backgroundImage = `radial-gradient(circle, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+    } else if (state.colorMode === 'conic') {
+      baseStyle.backgroundImage = `conic-gradient(from ${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+    }
+
+    return baseStyle;
+  }, [
+    state.width, 
+    state.height, 
+    pathData, 
+    state.colorMode, 
+    state.solidColor, 
+    state.solidOpacity,
+    state.gradientAngle,
+    state.gradientStops,
+    state.blur,
+    state.backdropBlur,
+    state.borderEnabled,
+    state.strokeWidth,
+    state.strokeStyle,
+    state.strokeColor
+  ]);
+
+  // Optimized spotlight trigger with proper cleanup
   const handleSpotlightTrigger = useCallback(() => {
     setGlowOpacity(0);
     
@@ -108,10 +176,10 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
         setGlowOpacity(1);
       }, ANIMATION_TIMINGS.FADE_IN_DELAY);
       
-      return () => clearTimeout(restoreTimeout);
+      // Cleanup nem szükséges itt, mert nincs visszatérési érték
     }, ANIMATION_TIMINGS.FADE_OUT);
     
-    return () => clearTimeout(triggerTimeout);
+    // Ez se kell, mert a setTimeout nem ad vissza cleanup függvényt
   }, [onSpotlightTrigger]);
 
   return (
@@ -128,34 +196,10 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
 
       {/* Phone Frame */}
       <div 
-        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] border-border border-4 rounded-[40px] relative shadow-2xl"
+        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] rounded-[40px] relative shadow-2xl"
         role="presentation"
         aria-label="Mobile preview frame"
-        style={{
-          width: `${state.width}px`,
-          height: `${state.height}px`,
-          clipPath: `path('${pathData}')`,
-          backgroundColor: state.colorMode === 'solid' ? state.solidColor : 'transparent',
-          opacity: state.colorMode === 'solid' ? state.solidOpacity / 100 : 1,
-          background: state.colorMode === 'linear' 
-            ? `linear-gradient(${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-            : state.colorMode === 'radial'
-            ? `radial-gradient(circle, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-            : state.colorMode === 'conic'
-            ? `conic-gradient(from ${state.gradientAngle}deg, ${state.gradientStops.map(s => `${s.color} ${s.position}%`).join(', ')})`
-            : undefined,
-          filter: state.blur > 0 ? `blur(${state.blur}px)` : undefined,
-          backdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
-          WebkitBackdropFilter: state.backdropBlur > 0 ? `blur(${state.backdropBlur}px)` : undefined,
-          border: state.borderEnabled 
-            ? `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`
-            : '4px solid var(--border)',
-          borderColor: state.borderEnabled ? state.strokeColor : undefined,
-          borderStyle: state.borderEnabled ? state.strokeStyle : 'solid',
-          borderWidth: state.borderEnabled ? `${state.strokeWidth}px` : '4px',
-          outline: state.borderEnabled ? 'none' : undefined,
-          boxShadow: state.borderEnabled ? `0 0 0 0 transparent, inset 0 0 0 0 transparent` : undefined,
-        }}
+        style={phoneFrameStyle}
       >
         {/* Stroke Layer for Opacity */}
         {state.borderEnabled && (
@@ -163,7 +207,18 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
             className="absolute inset-0 pointer-events-none z-[15]"
             style={{
               clipPath: `path('${pathData}')`,
-              border: `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`,
+              borderTopWidth: `${state.strokeWidth}px`,
+              borderRightWidth: `${state.strokeWidth}px`,
+              borderBottomWidth: `${state.strokeWidth}px`,
+              borderLeftWidth: `${state.strokeWidth}px`,
+              borderTopStyle: state.strokeStyle,
+              borderRightStyle: state.strokeStyle,
+              borderBottomStyle: state.strokeStyle,
+              borderLeftStyle: state.strokeStyle,
+              borderTopColor: state.strokeColor,
+              borderRightColor: state.strokeColor,
+              borderBottomColor: state.strokeColor,
+              borderLeftColor: state.strokeColor,
               opacity: state.strokeOpacity / 100,
             }}
           />
