@@ -188,26 +188,61 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
       <div className="space-y-4">
         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Position</p>
         
-        <div className="grid grid-cols-2 gap-4">
-          <CustomSlider
-            label="Offset X"
-            value={state.glowPositionX}
-            min={-200}
-            max={200}
-            step={5}
-            onChange={(val) => updateState({ glowPositionX: val })}
-            unit="px"
-          />
-          <CustomSlider
-            label="Offset Y"
-            value={state.glowPositionY}
-            min={-200}
-            max={200}
-            step={5}
-            onChange={(val) => updateState({ glowPositionY: val })}
-            unit="px"
-          />
-        </div>
+        <CustomSlider
+          label="Offset X"
+          value={state.glowPositionX}
+          min={-1200}
+          max={400}
+          step={10}
+          onChange={(val) => updateState({ glowPositionX: val })}
+          unit="px"
+        />
+        <CustomSlider
+          label="Offset Y"
+          value={state.glowPositionY}
+          min={-1800}
+          max={400}
+          step={10}
+          onChange={(val) => updateState({ glowPositionY: val })}
+          unit="px"
+        />
+      </div>
+
+      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+
+      {/* Advanced Glow */}
+      <div className="space-y-4">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Advanced Effects</p>
+        
+        <CustomSlider
+          label="Glow Intensity"
+          value={state.glowOpacity}
+          min={0}
+          max={100}
+          step={1}
+          onChange={(val) => updateState({ glowOpacity: val })}
+          unit="%"
+        />
+
+        <CustomSlider
+          label="Glow Blur"
+          value={state.glowBlur}
+          min={0}
+          max={300}
+          step={1}
+          onChange={(val) => updateState({ glowBlur: val })}
+          unit="px"
+        />
+
+        <CustomSlider
+          label="Glow Spread"
+          value={state.glowSpread}
+          min={0}
+          max={100}
+          step={1}
+          onChange={(val) => updateState({ glowSpread: val })}
+          unit="%"
+        />
       </div>
 
       {/* Random Generator */}
