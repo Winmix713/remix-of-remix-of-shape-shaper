@@ -204,18 +204,18 @@ export const ColorTab: FC<ColorTabProps> = ({ state, updateState, updateGradient
           <div className="space-y-2">
             <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">Color Palette</p>
             <div className="grid grid-cols-10 gap-2">
-              {tailwindColors.map((color) => (
+              {tailwindColors.map((colorDef) => (
                 <button
-                  key={color}
-                  onClick={() => updateState({ solidColor: color })}
+                  key={colorDef.hex}
+                  onClick={() => updateState({ solidColor: colorDef.hex })}
                   className={`w-full aspect-square rounded-md hover:scale-110 transition-transform border-2 ${
-                    state.solidColor === color
+                    state.solidColor === colorDef.hex
                       ? 'border-zinc-900 dark:border-white ring-2 ring-offset-2 ring-zinc-900 dark:ring-white'
                       : 'border-black/5 dark:border-white/5'
                   }`}
-                  style={{ backgroundColor: color }}
-                  aria-label={`Select color ${color}`}
-                  aria-pressed={state.solidColor === color}
+                  style={{ backgroundColor: colorDef.hex }}
+                  aria-label={`Select color ${colorDef.name}`}
+                  aria-pressed={state.solidColor === colorDef.hex}
                 />
               ))}
             </div>

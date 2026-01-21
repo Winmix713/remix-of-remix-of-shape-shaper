@@ -128,16 +128,16 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
                 <div className="relative size-7 mr-3 rounded-md border border-zinc-200/50 dark:border-zinc-700/50 overflow-hidden">
                   <input
                     type="color"
-                    value={state.strokeColor}
+                    value={state.strokeColor || '#000000'}
                     onChange={(e) => updateState({ strokeColor: e.target.value })}
                     className="absolute inset-0 w-[150%] h-[150%] -top-1/4 -left-1/4 cursor-pointer opacity-0 z-10"
                     aria-label="Stroke color picker"
                   />
-                  <div className="w-full h-full" style={{ backgroundColor: state.strokeColor }} />
+                  <div className="w-full h-full" style={{ backgroundColor: state.strokeColor || '#000000' }} />
                 </div>
                 <input
                   type="text"
-                  value={state.strokeColor.toUpperCase()}
+                  value={(state.strokeColor || '#000000').toUpperCase()}
                   onChange={(e) => updateState({ strokeColor: e.target.value })}
                   className="flex-1 bg-transparent border-none text-sm font-mono text-zinc-700 dark:text-zinc-300 uppercase focus:outline-none"
                   maxLength={7}

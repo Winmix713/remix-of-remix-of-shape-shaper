@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef } from 'react';
 
 interface CustomSliderProps {
   label?: string;
@@ -11,7 +11,7 @@ interface CustomSliderProps {
   gradient?: string;
 }
 
-export const CustomSlider: React.FC<CustomSliderProps> = ({
+export const CustomSlider = forwardRef<HTMLDivElement, CustomSliderProps>(({
   label,
   value = 0,
   min,
@@ -108,4 +108,6 @@ export const CustomSlider: React.FC<CustomSliderProps> = ({
       </div>
     </div>
   );
-};
+});
+
+CustomSlider.displayName = 'CustomSlider';
