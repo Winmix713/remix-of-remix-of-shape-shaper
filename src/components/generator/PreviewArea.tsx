@@ -29,7 +29,9 @@ const ANIMATION_TIMINGS = {
 const GlowLayer = memo<{
   layer: typeof GLOW_LAYERS[number];
   color: string;
-}>(({ layer, color }) => (
+  customBlur?: number;
+  customOpacity?: number;
+}>(({ layer, color, customBlur, customOpacity }) => (
   <div
     className="absolute rounded-full transition-all duration-300 will-change-transform"
     style={{
@@ -37,10 +39,10 @@ const GlowLayer = memo<{
       left: `${layer.left}px`,
       width: `${layer.width}px`,
       height: `${layer.height}px`,
-      filter: `blur(${layer.blur}px)`,
+      filter: `blur(${customBlur ?? layer.blur}px)`,
       background: color,
       mixBlendMode: 'screen',
-      opacity: layer.opacity,
+      opacity: (customOpacity ?? layer.opacity),
     }}
     aria-hidden="true"
   />
@@ -81,11 +83,12 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
   // Memoize glow container styles
   const glowContainerStyle = useMemo(() => ({
     maskImage: 'linear-gradient(black 30%, transparent 100%)',
-    left: '-590px',
-    top: '-1070px',
-    opacity: state.enabled ? glowOpacity : 0,
-    transform: `scale(${state.glowScale * 0.75})`,
-  }), [state.enabled, state.glowScale, glowOpacity]);
+    WebkitMaskImage: 'linear-gradient(black 30%, transparent 100%)',
+    left: `${state.glowPositionX}px`,
+    top: `${state.glowPositionY}px`,
+    opacity: (state.enabled ? glowOpacity : 0) * (state.glowOpacity / 100),
+    transform: `scale(${state.glowScale})`,
+  }), [state.enabled, state.glowScale, state.glowPositionX, state.glowPositionY, state.glowOpacity, glowOpacity]);
 
   // Memoize noise overlay styles
   const noiseStyle = useMemo(() => ({
@@ -177,6 +180,7 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
               key={`glow-layer-${index}`}
               layer={layer}
               color={layer.colorIndex === -1 ? glowColors[3] : glowColors[layer.colorIndex]}
+              customBlur={index === 1 ? state.glowBlur : undefined}
             />
           ))}
         </div>
