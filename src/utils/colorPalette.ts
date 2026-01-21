@@ -2,6 +2,8 @@
 // COLOR PALETTE UTILITIES
 // ============================================================================
 
+import { ValidationError, createInvalidHexError, createInvalidRgbError, ErrorCode } from '@/lib/errors';
+
 /**
  * Color categories for better organization
  */
@@ -55,10 +57,13 @@ export interface GradientPreset {
  * Calculate relative luminance of a color (WCAG standard)
  * @param hex - Hex color string (e.g., '#ff0000')
  * @returns Luminance value between 0 and 1
+ * @throws ValidationError if hex color is invalid
  */
 export function calculateLuminance(hex: string): number {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 0;
+  if (!rgb) {
+    throw createInvalidHexError(hex);
+  }
 
   const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((val) => {
     const normalized = val / 255;
@@ -72,9 +77,19 @@ export function calculateLuminance(hex: string): number {
 
 /**
  * Convert hex color to RGB
+ * @param hex - Hex color string (e.g., '#ff0000' or '#f00')
+ * @returns RGB object or null if invalid
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  // Validate hex format first
+  if (!isValidHex(hex)) {
+    return null;
+  }
+
+  // Normalize hex (expand shorthand and remove #)
+  const normalized = normalizeHex(hex).replace('#', '');
+  
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalized);
   return result
     ? {
         r: parseInt(result[1], 16),
@@ -85,9 +100,19 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } | nul
 }
 
 /**
- * Convert RGB to hex
+ * Convert RGB to hex with validation
+ * @param r - Red value (0-255)
+ * @param g - Green value (0-255)
+ * @param b - Blue value (0-255)
+ * @returns Hex color string
+ * @throws ValidationError if RGB values are out of range
  */
 export function rgbToHex(r: number, g: number, b: number): string {
+  // Validate RGB values
+  if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+    throw createInvalidRgbError(r, g, b);
+  }
+
   return '#' + [r, g, b].map(x => {
     const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
     return hex.length === 1 ? '0' + hex : hex;

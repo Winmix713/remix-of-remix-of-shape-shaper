@@ -55,10 +55,49 @@ npm run dev
 This project is built with:
 
 - Vite
-- TypeScript
+- TypeScript (with strict mode enabled)
 - React
 - shadcn-ui
 - Tailwind CSS
+- Vitest for testing
+
+## Development Features
+
+### Error Handling Framework
+
+This project includes a comprehensive error handling system:
+
+- **Custom Error Classes**: `AppError`, `ValidationError`, `ExportError`, `StorageError`
+- **User-Friendly Messages**: Technical errors are converted to helpful user messages
+- **Error Boundary**: React component that catches and displays errors gracefully
+- **Toast Notifications**: Visual feedback for errors with recovery hints
+- **Fallback Support**: LocalStorage fallback to in-memory storage when unavailable
+
+See `src/lib/errors.ts` for the complete error handling framework.
+
+### Testing
+
+Run tests with:
+
+```bash
+npm test                  # Run all tests
+npm run test:watch       # Watch mode for development
+npm run test:coverage    # Generate coverage report
+```
+
+Current test coverage includes:
+- Superellipse path generation
+- Color conversion utilities
+- Mathematical calculations
+- Error handling scenarios
+
+### TypeScript Strict Mode
+
+This project uses TypeScript strict mode for enhanced type safety. See `MIGRATION.md` for:
+- Migration guidelines
+- Common patterns and fixes
+- Type-safety improvements
+- Technical debt tracking
 
 ## How can I deploy this project?
 
