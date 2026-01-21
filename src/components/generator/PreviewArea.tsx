@@ -150,8 +150,21 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
           borderColor: state.borderEnabled ? state.strokeColor : undefined,
           borderStyle: state.borderEnabled ? state.strokeStyle : 'solid',
           borderWidth: state.borderEnabled ? `${state.strokeWidth}px` : '4px',
+          outline: state.borderEnabled ? 'none' : undefined,
+          boxShadow: state.borderEnabled ? `0 0 0 0 transparent, inset 0 0 0 0 transparent` : undefined,
         }}
       >
+        {/* Stroke Layer for Opacity */}
+        {state.borderEnabled && (
+          <div 
+            className="absolute inset-0 pointer-events-none z-[15]"
+            style={{
+              clipPath: `path('${pathData}')`,
+              border: `${state.strokeWidth}px ${state.strokeStyle} ${state.strokeColor}`,
+              opacity: state.strokeOpacity / 100,
+            }}
+          />
+        )}
         
         {/* Glow Container - 4-layer progressive blur system */}
         <div 
