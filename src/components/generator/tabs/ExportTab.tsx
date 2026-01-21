@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Download, FileCode, FileJson, Copy, Check, Image, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { createPngExportError, createSvgExportError, logError, toUserMessage } from '@/lib/errors';
 
 // ============================================================================
 // TYPES
@@ -10,7 +12,8 @@ interface SuperellipseState {
   height: number;
   exp: number;
   gradientStops: Array<{ color: string; position: number }>;
-  [key: string]: any;
+  // Allow additional properties for other state fields
+  [key: string]: unknown;
 }
 
 interface ExportTabProps {
@@ -45,16 +48,22 @@ const generateSVG = (state: SuperellipseState, pathData: string): string => {
 };
 
 const downloadSVG = (state: SuperellipseState, pathData: string, filename: string): void => {
-  const svg = generateSVG(state, pathData);
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  try {
+    const svg = generateSVG(state, pathData);
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    const exportError = createSvgExportError(error as Error);
+    logError(exportError);
+    throw exportError;
+  }
 };
 
 // ============================================================================
@@ -163,7 +172,19 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
   const jsonCode = useMemo(() => JSON.stringify(state, null, 2), [state]);
 
   const handleDownloadSVG = useCallback(() => {
-    downloadSVG(state, pathData, `superellipse-${Date.now()}.svg`);
+    try {
+      downloadSVG(state, pathData, `superellipse-${Date.now()}.svg`);
+      toast.success('SVG downloaded successfully', {
+        description: 'Your superellipse has been saved',
+        duration: 3000,
+      });
+    } catch (error) {
+      const userMessage = toUserMessage(error);
+      toast.error(userMessage.message, {
+        description: userMessage.hint,
+        duration: 5000,
+      });
+    }
   }, [state, pathData]);
 
   const handleDownloadPNG = useCallback(async () => {
@@ -172,18 +193,36 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
       const svg = generateSVG(state, pathData);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
+      
+      if (!ctx) {
+        throw createPngExportError(new Error('Canvas context not available'));
+      }
       
       const img = new window.Image();
       const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(svgBlob);
 
       img.onload = () => {
-        canvas.width = state.width;
-        canvas.height = state.height;
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob((blob) => {
-          if (blob) {
+        try {
+          canvas.width = state.width * 2; // 2x for better quality
+          canvas.height = state.height * 2;
+          ctx.scale(2, 2);
+          ctx.drawImage(img, 0, 0);
+          
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              const blobError = createPngExportError(new Error('Blob creation failed'));
+              logError(blobError);
+              const userMessage = toUserMessage(blobError);
+              toast.error(userMessage.message, {
+                description: userMessage.hint,
+                duration: 5000,
+              });
+              setDownloadingPNG(false);
+              URL.revokeObjectURL(url);
+              return;
+            }
+            
             const pngUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = pngUrl;
@@ -192,20 +231,48 @@ export const ExportTab: React.FC<ExportTabProps> = ({ state, pathData }) => {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(pngUrl);
-          }
+            URL.revokeObjectURL(url);
+            
+            setDownloadingPNG(false);
+            toast.success('PNG downloaded successfully', {
+              description: 'High-resolution image saved',
+              duration: 3000,
+            });
+          }, 'image/png');
+        } catch (err) {
+          const exportError = createPngExportError(err as Error);
+          logError(exportError);
+          const userMessage = toUserMessage(exportError);
+          toast.error(userMessage.message, {
+            description: userMessage.hint,
+            duration: 5000,
+          });
           setDownloadingPNG(false);
           URL.revokeObjectURL(url);
-        }, 'image/png');
+        }
       };
       
       img.onerror = () => {
-        throw new Error('Failed to load image for PNG export');
+        const imgError = createPngExportError(new Error('Failed to load SVG image'));
+        logError(imgError);
+        const userMessage = toUserMessage(imgError);
+        toast.error(userMessage.message, {
+          description: userMessage.hint,
+          duration: 5000,
+        });
+        setDownloadingPNG(false);
+        URL.revokeObjectURL(url);
       };
 
       img.src = url;
     } catch (error) {
-      console.error('PNG export failed:', error);
-      alert('Failed to export PNG. Please try again.');
+      const exportError = createPngExportError(error as Error);
+      logError(exportError);
+      const userMessage = toUserMessage(exportError);
+      toast.error(userMessage.message, {
+        description: userMessage.hint,
+        duration: 5000,
+      });
       setDownloadingPNG(false);
     }
   }, [state, pathData]);
