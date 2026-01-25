@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Square, Droplet, Sparkles, Zap, Save, Download, Code, RotateCcw } from 'lucide-react';
+import { Square, Droplet, Sparkles, Zap, Save, Download, Code, RotateCcw, Image } from 'lucide-react';
 import { SuperellipseState, GradientStop } from '../../hooks/useSuperellipse';
 import { ShapeTab } from './tabs/ShapeTab';
 import { ColorTab } from './tabs/ColorTab';
@@ -8,6 +8,7 @@ import { EffectsTab } from './tabs/EffectsTab';
 import { PresetsTab } from './tabs/PresetsTab';
 import { ExportTab } from './tabs/ExportTab';
 import { CssTab } from './tabs/CssTab';
+import { AssetsTab } from './tabs/AssetsTab';
 
 interface ControlPanelProps {
   state: SuperellipseState;
@@ -21,7 +22,7 @@ interface ControlPanelProps {
   onThemeChange: (theme: 'light' | 'dark') => void;
 }
 
-type CategoryId = 'shape' | 'color' | 'glow' | 'effects' | 'presets' | 'css' | 'export';
+type CategoryId = 'shape' | 'color' | 'glow' | 'effects' | 'assets' | 'presets' | 'css' | 'export';
 
 interface Category {
   id: CategoryId;
@@ -66,6 +67,14 @@ const CATEGORIES: Category[] = [
     showReset: true
   },
   { 
+    id: 'assets', 
+    icon: <Image className="w-3.5 h-3.5" />, 
+    label: 'Assets', 
+    title: 'Asset Library',
+    description: 'Upload and manage images',
+    showReset: false
+  },
+  { 
     id: 'presets', 
     icon: <Save className="w-3.5 h-3.5" />, 
     label: 'Presets', 
@@ -74,7 +83,7 @@ const CATEGORIES: Category[] = [
     showReset: false
   },
   { 
-    id: 'css', 
+    id: 'css',
     icon: <Code className="w-3.5 h-3.5" />, 
     label: 'CSS', 
     title: 'CSS Export',
@@ -207,6 +216,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           )}
           {activeCategory === 'effects' && (
             <EffectsTab state={state} updateState={updateState} />
+          )}
+          {activeCategory === 'assets' && (
+            <AssetsTab />
           )}
           {activeCategory === 'presets' && (
             <PresetsTab currentState={state} onLoadPreset={loadState} />

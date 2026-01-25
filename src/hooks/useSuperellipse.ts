@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getSuperellipsePath, getAsymmetricSuperellipsePath } from '../utils/math';
+import { getSuperellipsePath, getPerCornerSuperellipsePath } from '../utils/math';
 
 export type GradientStop = {
   color: string;
@@ -131,7 +131,7 @@ export function useSuperellipse() {
 
   const pathData = useMemo(() => {
     if (state.useAsymmetricCorners) {
-      return getAsymmetricSuperellipsePath(
+      return getPerCornerSuperellipsePath(
         state.width, 
         state.height, 
         state.cornerExponents
