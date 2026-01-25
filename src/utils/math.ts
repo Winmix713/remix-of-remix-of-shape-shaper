@@ -114,6 +114,81 @@ export function getAsymmetricSuperellipsePath(
 }
 
 /**
+ * Per-corner asymmetric superellipse path
+ * Each corner can have its own exponent for unique squircle shapes
+ */
+export interface CornerExponents {
+  topLeft: number;
+  topRight: number;
+  bottomRight: number;
+  bottomLeft: number;
+}
+
+export function getPerCornerSuperellipsePath(
+  w: number,
+  h: number,
+  corners: CornerExponents,
+  options: { steps?: number; precision?: number } = {}
+): string {
+  const { steps = 360, precision = 2 } = options;
+
+  if (w <= 0 || h <= 0) {
+    throw new Error('Width and height must be positive numbers');
+  }
+
+  const a = w / 2;
+  const b = h / 2;
+  const points: string[] = [];
+
+  // Helper to get exponent for a given angle
+  const getExponentForAngle = (t: number): number => {
+    // Normalize angle to 0-2π
+    const angle = ((t % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    
+    // Q1: top-right (0 to π/2)
+    // Q2: top-left (π/2 to π)
+    // Q3: bottom-left (π to 3π/2)
+    // Q4: bottom-right (3π/2 to 2π)
+    
+    if (angle < Math.PI / 2) {
+      // Interpolate between topRight and bottomRight
+      const factor = angle / (Math.PI / 2);
+      return corners.topRight * (1 - factor) + corners.bottomRight * factor;
+    } else if (angle < Math.PI) {
+      // Interpolate between bottomRight and bottomLeft
+      const factor = (angle - Math.PI / 2) / (Math.PI / 2);
+      return corners.bottomRight * (1 - factor) + corners.bottomLeft * factor;
+    } else if (angle < (3 * Math.PI) / 2) {
+      // Interpolate between bottomLeft and topLeft
+      const factor = (angle - Math.PI) / (Math.PI / 2);
+      return corners.bottomLeft * (1 - factor) + corners.topLeft * factor;
+    } else {
+      // Interpolate between topLeft and topRight
+      const factor = (angle - (3 * Math.PI) / 2) / (Math.PI / 2);
+      return corners.topLeft * (1 - factor) + corners.topRight * factor;
+    }
+  };
+
+  for (let i = 0; i <= steps; i++) {
+    const t = (i * 2 * Math.PI) / steps;
+    const n = getExponentForAngle(t);
+    
+    const cosT = Math.cos(t);
+    const sinT = Math.sin(t);
+
+    const x = a * Math.sign(cosT) * Math.pow(Math.abs(cosT), 2 / n);
+    const y = b * Math.sign(sinT) * Math.pow(Math.abs(sinT), 2 / n);
+
+    const finalX = (x + a).toFixed(precision);
+    const finalY = (y + b).toFixed(precision);
+
+    points.push(`${finalX} ${finalY}`);
+  }
+
+  return `M ${points.join(' L ')} Z`;
+}
+
+/**
  * Approximate perimeter
  */
 export function getSuperellipsePerimeter(

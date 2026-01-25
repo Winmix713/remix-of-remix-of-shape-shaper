@@ -7,7 +7,7 @@ import {
 import { CornerControls } from "../CornerControls";
 import {
   getSuperellipsePath,
-  getAsymmetricSuperellipsePath,
+  getPerCornerSuperellipsePath,
 } from "../../../utils/math";
 
 // ============================================================================
@@ -284,10 +284,10 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
   // Compute path data for preview
   const pathData = useMemo(() => {
     if (state.useAsymmetricCorners && state.cornerExponents) {
-      return getAsymmetricSuperellipsePath(
+      return getPerCornerSuperellipsePath(
         state.width,
         state.height,
-        state.cornerExponents,
+        state.cornerExponents
       );
     }
     return getSuperellipsePath(state.width, state.height, state.exp);
