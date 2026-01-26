@@ -184,7 +184,7 @@ export const PreviewArea: FC<PreviewAreaProps> = ({
 
   return (
     <section 
-      className="flex-1 relative flex items-center justify-center bg-muted dark:bg-[#050505] overflow-hidden p-6 lg:p-0 min-h-[400px]"
+      className="relative flex items-center justify-center overflow-visible p-6 lg:p-0"
       aria-label="Preview area"
     >
       {/* Grid Background */}
