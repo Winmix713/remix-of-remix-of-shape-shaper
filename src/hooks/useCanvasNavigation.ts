@@ -234,39 +234,43 @@ export function useCanvasNavigation(): UseCanvasNavigationReturn {
     
     safePreventDefault(e);
 
-    // Calculate zoom delta based on wheel direction
+    // Calculate zoom delta based on wheel direction with smoother scaling
     const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-    const newZoom = clamp(state.zoom + delta, MIN_ZOOM, MAX_ZOOM);
+    
+    // Use functional update to avoid stale state closure issues
+    setState(prevState => {
+      const newZoom = clamp(prevState.zoom + delta, MIN_ZOOM, MAX_ZOOM);
 
-    // If zoom hasn't changed (at limits), don't update
-    if (newZoom === state.zoom) return;
+      // If zoom hasn't changed (at limits), don't update
+      if (Math.abs(newZoom - prevState.zoom) < 0.001) return prevState;
 
-    // Zoom towards cursor position
-    if (containerRef.current) {
-      try {
-        const rect = containerRef.current.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+      // Zoom towards cursor position
+      if (containerRef.current) {
+        try {
+          const rect = containerRef.current.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
 
-        // Calculate new pan position to keep cursor point fixed
-        const zoomRatio = newZoom / state.zoom;
-        const newPanX = mouseX - (mouseX - state.panX) * zoomRatio;
-        const newPanY = mouseY - (mouseY - state.panY) * zoomRatio;
+          // Calculate new pan position to keep cursor point fixed
+          const zoomRatio = newZoom / prevState.zoom;
+          const newPanX = mouseX - (mouseX - prevState.panX) * zoomRatio;
+          const newPanY = mouseY - (mouseY - prevState.panY) * zoomRatio;
 
-        setState({
-          zoom: newZoom,
-          panX: newPanX,
-          panY: newPanY,
-        });
-      } catch (error) {
-        // Fallback to simple zoom if calculation fails
-        console.warn('Error calculating zoom position:', error);
-        setZoom(newZoom);
+          return {
+            zoom: newZoom,
+            panX: newPanX,
+            panY: newPanY,
+          };
+        } catch (error) {
+          // Fallback to simple zoom if calculation fails
+          console.warn('Error calculating zoom position:', error);
+          return { ...prevState, zoom: newZoom };
+        }
       }
-    } else {
-      setZoom(newZoom);
-    }
-  }, [state.zoom, state.panX, state.panY, setZoom]);
+      
+      return { ...prevState, zoom: newZoom };
+    });
+  }, []);
 
   // ========================================================================
   // Keyboard Event Handlers

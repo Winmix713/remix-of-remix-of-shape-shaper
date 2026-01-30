@@ -313,13 +313,17 @@ const isValidHexColor = (color: string): boolean => {
  * @param l Lightness (0-100)
  */
 function hslToHex(h: number, s: number, l: number): string {
-  l /= 100;
-  const a = (s * Math.min(l, 1 - l)) / 100;
+  // Normalize values
+  const hNorm = ((h % 360) + 360) % 360; // Handle negative hue
+  const sNorm = Math.max(0, Math.min(100, s)) / 100;
+  const lNorm = Math.max(0, Math.min(100, l)) / 100;
+  
+  const a = sNorm * Math.min(lNorm, 1 - lNorm);
   
   const f = (n: number): string => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color)
+    const k = (n + hNorm / 30) % 12;
+    const color = lNorm - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * Math.max(0, Math.min(1, color)))
       .toString(16)
       .padStart(2, '0');
   };
