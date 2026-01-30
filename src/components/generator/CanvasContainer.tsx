@@ -225,7 +225,7 @@ KeyboardHint.displayName = 'KeyboardHint';
 // Main Component
 // ============================================================================
 
-export const CanvasContainer: FC<CanvasContainerProps> = memo(({
+const CanvasContainerInner: FC<CanvasContainerProps> = ({
   zoom,
   panX,
   panY,
@@ -363,7 +363,7 @@ export const CanvasContainer: FC<CanvasContainerProps> = memo(({
   return (
     <div 
       className={cn(
-        "flex-1 relative flex flex-col overflow-hidden bg-muted dark:bg-zinc-950",
+        "flex-1 relative flex flex-col overflow-hidden bg-muted",
         className
       )}
       role="region"
@@ -469,6 +469,9 @@ export const CanvasContainer: FC<CanvasContainerProps> = memo(({
       </div>
     </div>
   );
-});
+};
+
+// Properly memoize the component
+export const CanvasContainer = memo(CanvasContainerInner);
 
 CanvasContainer.displayName = 'CanvasContainer';

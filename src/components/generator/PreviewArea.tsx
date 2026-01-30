@@ -224,7 +224,7 @@ GridBackground.displayName = 'GridBackground';
 // Main Component
 // ============================================================================
 
-export const PreviewArea: FC<PreviewAreaProps> = memo(({ 
+const PreviewAreaInner: FC<PreviewAreaProps> = ({ 
   state, 
   pathData, 
   theme, 
@@ -467,7 +467,7 @@ export const PreviewArea: FC<PreviewAreaProps> = memo(({
 
       {/* Phone Frame Container */}
       <div 
-        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 dark:bg-[#050505] dark:border-zinc-900 z-10 bg-background w-[300px] h-[400px] rounded-[40px] relative shadow-2xl"
+        className="sm:w-[320px] sm:h-[480px] overflow-hidden transition-all duration-500 z-10 bg-background w-[300px] h-[400px] rounded-[40px] relative shadow-2xl border border-border"
         role="presentation"
         aria-label="Mobile device preview frame"
         style={phoneFrameStyle}
@@ -572,6 +572,9 @@ export const PreviewArea: FC<PreviewAreaProps> = memo(({
       </div>
     </section>
   );
-});
+};
+
+// Properly memoize the component
+export const PreviewArea = memo(PreviewAreaInner);
 
 PreviewArea.displayName = 'PreviewArea';

@@ -222,19 +222,21 @@ export function useLayerManager(): UseLayerManagerReturn {
   // State Management
   // ========================================================================
   
-  const [layers, setLayers] = useState<Layer[]>(() => [
-    createDefaultLayer('shape', 'Main Shape', { type: 'superellipse' }),
-  ]);
+  // Initialize layers with stable reference
+  const [layers, setLayers] = useState<Layer[]>(() => {
+    const initialLayer = createDefaultLayer('shape', 'Main Shape', { type: 'superellipse' });
+    return [initialLayer];
+  });
   
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(() => 
-    layers[0]?.id || null
-  );
+  // Initialize selectedLayerId separately to avoid stale closure
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   
   const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]);
   
-  // History management
-  const [history, setHistory] = useState<Layer[][]>([cloneLayers(layers)]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  // History management - initialize with empty array, will be populated in useEffect
+  const [history, setHistory] = useState<Layer[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const isHistoryInitialized = useRef(false);
   
   // ========================================================================
   // Refs
@@ -273,56 +275,65 @@ export function useLayerManager(): UseLayerManagerReturn {
    * Add current state to history
    */
   const addToHistory = useCallback((newLayers: Layer[]) => {
-    if (isUndoRedoOperation.current) return;
+    if (isUndoRedoOperation.current || !isHistoryInitialized.current) return;
 
     setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
+      // Ensure we have valid history before modifying
+      const currentIndex = historyIndex >= 0 ? historyIndex : 0;
+      const newHistory = prev.slice(0, currentIndex + 1);
       newHistory.push(cloneLayers(newLayers));
       
       // Limit history length
       if (newHistory.length > MAX_HISTORY_LENGTH) {
         newHistory.shift();
+        setHistoryIndex(prev => Math.max(0, prev)); // Adjust index when shifting
         return newHistory;
       }
       
       return newHistory;
     });
     
-    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY_LENGTH - 1));
+    setHistoryIndex(prev => Math.min(Math.max(0, prev) + 1, MAX_HISTORY_LENGTH - 1));
   }, [historyIndex]);
 
   /**
    * Undo last action
    */
   const undo = useCallback(() => {
-    if (!canUndo) return;
+    if (!canUndo || historyIndex <= 0) return;
     
     isUndoRedoOperation.current = true;
     const newIndex = historyIndex - 1;
-    setHistoryIndex(newIndex);
-    setLayers(cloneLayers(history[newIndex]));
     
-    // Reset flag after state update
-    setTimeout(() => {
+    if (history[newIndex]) {
+      setHistoryIndex(newIndex);
+      setLayers(cloneLayers(history[newIndex]));
+    }
+    
+    // Reset flag after state update using requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
       isUndoRedoOperation.current = false;
-    }, 0);
+    });
   }, [canUndo, historyIndex, history]);
 
   /**
    * Redo last undone action
    */
   const redo = useCallback(() => {
-    if (!canRedo) return;
+    if (!canRedo || historyIndex >= history.length - 1) return;
     
     isUndoRedoOperation.current = true;
     const newIndex = historyIndex + 1;
-    setHistoryIndex(newIndex);
-    setLayers(cloneLayers(history[newIndex]));
     
-    // Reset flag after state update
-    setTimeout(() => {
+    if (history[newIndex]) {
+      setHistoryIndex(newIndex);
+      setLayers(cloneLayers(history[newIndex]));
+    }
+    
+    // Reset flag after state update using requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
       isUndoRedoOperation.current = false;
-    }, 0);
+    });
   }, [canRedo, historyIndex, history]);
 
   // ========================================================================
@@ -891,6 +902,22 @@ export function useLayerManager(): UseLayerManagerReturn {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo, selectedLayerId, removeLayer, duplicateLayer]);
+
+  // ========================================================================
+  // Initialize history and selection on mount
+  // ========================================================================
+
+  useEffect(() => {
+    if (!isHistoryInitialized.current && layers.length > 0) {
+      // Set initial selection
+      setSelectedLayerId(layers[0]?.id || null);
+      
+      // Initialize history with current state
+      setHistory([cloneLayers(layers)]);
+      setHistoryIndex(0);
+      isHistoryInitialized.current = true;
+    }
+  }, [layers]);
 
   // ========================================================================
   // Cleanup on Unmount
