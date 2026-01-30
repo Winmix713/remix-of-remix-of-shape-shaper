@@ -1,3 +1,34 @@
+/**
+ * ControlPanel Component
+ * 
+ * A comprehensive control panel for managing superellipse shape configurations.
+ * Provides tabbed interface for different aspects of shape customization including
+ * shape parameters, colors, effects, presets, and export options.
+ * 
+ * Features:
+ * - 8 category tabs (Shape, Color, Glow, Effects, Assets, Presets, CSS, Export)
+ * - Keyboard navigation support (Arrow keys)
+ * - Conditional reset button based on category
+ * - Responsive design with mobile optimization
+ * - Full accessibility (ARIA, semantic HTML, focus management)
+ * - Performance optimized with memoization
+ * - Custom scrollbar styling
+ * 
+ * @example
+ * ```tsx
+ * <ControlPanel
+ *   state={superellipseState}
+ *   updateState={handleUpdate}
+ *   updateGradientStop={handleGradientUpdate}
+ *   resetState={handleReset}
+ *   loadState={handleLoad}
+ *   pathData={svgPath}
+ *   theme="dark"
+ *   onThemeChange={handleThemeChange}
+ * />
+ * ```
+ */
+
 import { 
   useState, 
   useMemo, 
