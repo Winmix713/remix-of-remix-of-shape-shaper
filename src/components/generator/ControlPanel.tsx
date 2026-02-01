@@ -38,6 +38,7 @@ import {
   type FC,
   type KeyboardEvent 
 } from 'react';
+import { Code2 } from 'lucide-react';
 import { 
   Square, 
   Droplet, 
@@ -58,6 +59,8 @@ import { PresetsTab } from './tabs/PresetsTab';
 import { ExportTab } from './tabs/ExportTab';
 import { CssTab } from './tabs/CssTab';
 import { AssetsTab } from './tabs/AssetsTab';
+import { QuickPresetsGrid } from './QuickPresetsGrid';
+import { ExportCodeModal } from './modals/ExportCodeModal';
 
 // ============================================================================
 // Types & Interfaces
@@ -243,6 +246,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
   // ========================================================================
   
   const [activeCategory, setActiveCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
+  const [showExportModal, setShowExportModal] = useState(false);
   const tabButtonRefs = useRef<Map<CategoryId, HTMLButtonElement>>(new Map());
   const isComponentMounted = useRef(true);
 
@@ -507,7 +511,28 @@ export const ControlPanel: FC<ControlPanelProps> = ({
             <CssTab state={state} theme={theme} />
           )}
           {activeCategory === 'export' && (
-            <ExportTab state={state} pathData={pathData} />
+            <>
+              <ExportTab state={state} pathData={pathData} />
+              <div className="mt-4 pt-4 border-t border-border">
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-all"
+                >
+                  <Code2 className="w-4 h-4" />
+                  Export Code (SVG/CSS/React/Vue)
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Quick Presets - shown in Shape tab */}
+          {activeCategory === 'shape' && (
+            <div className="mt-6 pt-4 border-t border-border">
+              <QuickPresetsGrid 
+                currentState={state} 
+                onApplyPreset={updateState} 
+              />
+            </div>
           )}
         </div>
 
@@ -534,6 +559,14 @@ export const ControlPanel: FC<ControlPanelProps> = ({
           </footer>
         )}
       </div>
+
+      {/* Export Code Modal */}
+      <ExportCodeModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        state={state}
+        pathData={pathData}
+      />
     </aside>
   );
 };

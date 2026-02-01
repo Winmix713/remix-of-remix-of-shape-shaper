@@ -34,9 +34,14 @@ A **Superellipse Generator Pro** egy böngészőalapú vizuális tervezőeszköz
 |---------|--------|
 | Aszimmetrikus sarkok | Minden sarok külön görbületi exponenssel |
 | 4-rétegű Glow rendszer | Progresszív elmosódás OKLCH színekkel |
+| Glow animációk | Pulse, Rotate, Wave animációk CSS exporttal |
 | Rétegkezelés | Drag & drop, csoportosítás, blend módok |
+| Quick Presets Grid | iOS Icon, Pill, Squircle stílusok egy kattintással |
+| Scene Settings | Global Scale, Gradient Mask, Noise Overlay |
+| Export Code Modal | SVG, CSS, React, Vue komponens export |
 | Valós idejű előnézet | Zoom, pan, grid overlay |
 | Undo/Redo | 50 lépéses history stack |
+| Web Worker | Háttérszálú path számítások |
 
 ---
 
