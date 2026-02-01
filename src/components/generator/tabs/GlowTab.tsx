@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shuffle, Sun, Moon } from 'lucide-react';
 import { SuperellipseState } from '../../../hooks/useSuperellipse';
 import { CustomSlider } from '../CustomSlider';
 import { HexColorPicker } from '../HexColorPicker';
+import { GlowAnimationControls, GlowAnimationState, DEFAULT_GLOW_ANIMATION } from '../GlowAnimationControls';
 
 interface GlowTabProps {
   state: SuperellipseState;
@@ -14,9 +15,14 @@ interface GlowTabProps {
 
 export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomize, theme = 'dark', onThemeChange }) => {
   const color = `oklch(${state.lightness}% ${state.chroma} ${state.hue})`;
+  const [glowAnimation, setGlowAnimation] = useState<GlowAnimationState>(DEFAULT_GLOW_ANIMATION);
 
   const handleHexColorChange = (hue: number, chroma: number, lightness: number) => {
     updateState({ hue, chroma, lightness });
+  };
+
+  const updateAnimation = (updates: Partial<GlowAnimationState>) => {
+    setGlowAnimation(prev => ({ ...prev, ...updates }));
   };
 
   return (
@@ -276,11 +282,22 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
         />
       </div>
 
+      {/* Animation Controls */}
+      <div className="h-px bg-muted" />
+      
+      <GlowAnimationControls
+        animation={glowAnimation}
+        onUpdateAnimation={updateAnimation}
+        glowHue={state.hue}
+        glowChroma={state.chroma}
+        glowLightness={state.lightness}
+      />
+
       {/* Random Generator */}
       {onRandomize && (
         <button
           onClick={onRandomize}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground font-medium hover:opacity-90 transition-all shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           aria-label="Generate random spotlight colors"
         >
           <Shuffle className="w-4 h-4" aria-hidden="true" />
