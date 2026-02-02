@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/layout/Header';
 import { PreviewArea } from '../components/generator/PreviewArea';
 import { ControlPanel } from '../components/generator/ControlPanel';
 import { LayerPanel } from '../components/generator/layers';
 import { CanvasContainer } from '../components/generator/CanvasContainer';
+import { KeyboardShortcutsModal } from '../components/generator/modals/KeyboardShortcutsModal';
 import { useSuperellipse } from '../hooks/useSuperellipse';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useCanvasNavigation } from '../hooks/useCanvasNavigation';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const Index: React.FC = () => {
   const { state, updateState, updateGradientStop, resetState, loadState, randomizeGlow, pathData } = useSuperellipse();
   const layerManager = useLayerManager();
   const canvasNav = useCanvasNavigation();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -33,6 +36,64 @@ const Index: React.FC = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  // Keyboard shortcut handlers
+  const handleDuplicateLayer = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.duplicateLayer(layerManager.selectedLayerId);
+    }
+  }, [layerManager]);
+
+  const handleDeleteLayer = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.removeLayer(layerManager.selectedLayerId);
+    }
+  }, [layerManager]);
+
+  const handleMoveLayerUp = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.moveLayer(layerManager.selectedLayerId, 'up');
+    }
+  }, [layerManager]);
+
+  const handleMoveLayerDown = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.moveLayer(layerManager.selectedLayerId, 'down');
+    }
+  }, [layerManager]);
+
+  const handleToggleVisibility = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.toggleVisibility(layerManager.selectedLayerId);
+    }
+  }, [layerManager]);
+
+  const handleToggleLock = useCallback(() => {
+    if (layerManager.selectedLayerId) {
+      layerManager.toggleLock(layerManager.selectedLayerId);
+    }
+  }, [layerManager]);
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    enabled: true,
+    handlers: {
+      undo: layerManager.undo,
+      redo: layerManager.redo,
+      duplicateLayer: handleDuplicateLayer,
+      deleteLayer: handleDeleteLayer,
+      moveLayerUp: handleMoveLayerUp,
+      moveLayerDown: handleMoveLayerDown,
+      toggleLayerVisibility: handleToggleVisibility,
+      toggleLayerLock: handleToggleLock,
+      zoomIn: canvasNav.zoomIn,
+      zoomOut: canvasNav.zoomOut,
+      zoomTo100: canvasNav.zoomTo100,
+      fitToView: canvasNav.resetView,
+      showShortcuts: () => setShowShortcutsModal(true),
+      deselectAll: () => layerManager.selectLayer(null),
+    },
+  });
+
   return (
     <div className="bg-background text-foreground flex flex-col h-screen overflow-hidden font-sans transition-colors duration-300">
       <Header theme={theme} toggleTheme={toggleTheme} />
@@ -50,7 +111,10 @@ const Index: React.FC = () => {
           onDuplicateLayer={layerManager.duplicateLayer}
           onToggleVisibility={layerManager.toggleVisibility}
           onToggleLock={layerManager.toggleLock}
+          onToggleSolo={layerManager.toggleSolo}
           onReorderLayers={layerManager.reorderLayers}
+          onMoveLayer={layerManager.moveLayer}
+          onMoveLayerToIndex={layerManager.moveLayerToIndex}
           onSetBlendMode={layerManager.setBlendMode}
           onSetOpacity={layerManager.setOpacity}
           onUpdateTransform={layerManager.updateTransform}
@@ -89,6 +153,12 @@ const Index: React.FC = () => {
           onThemeChange={setTheme}
         />
       </main>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal 
+        isOpen={showShortcutsModal} 
+        onClose={() => setShowShortcutsModal(false)} 
+      />
     </div>
   );
 };

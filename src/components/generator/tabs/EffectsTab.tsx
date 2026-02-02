@@ -1,6 +1,8 @@
-import type { FC } from 'react';
+import { useState, useCallback, type FC } from 'react';
 import { SuperellipseState } from '../../../hooks/useSuperellipse';
 import { CustomSlider } from '../CustomSlider';
+import { EffectStack } from '../effects';
+import { Effect, createEffect, EFFECT_PRESETS } from '@/types/effects';
 
 interface EffectsTabProps {
   state: SuperellipseState;
@@ -8,6 +10,9 @@ interface EffectsTabProps {
 }
 
 export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
+  // Local state for effect stack (will be moved to global state later)
+  const [effects, setEffects] = useState<Effect[]>([]);
+
   // Blur value validation
   const handleBlurChange = (val: number) => {
     updateState({ blur: Math.max(0, Math.min(50, val)) });
@@ -21,7 +26,6 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
   const handleBorderToggle = () => {
     const newBorderEnabled = !state.borderEnabled;
     if (!newBorderEnabled) {
-      // Reset to defaults when disabling
       updateState({
         borderEnabled: false,
         strokeWidth: 2,
@@ -48,10 +52,23 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
     }
   };
 
+  const handleEffectsChange = useCallback((newEffects: Effect[]) => {
+    setEffects(newEffects);
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Blur Effects */}
+      {/* Effect Stack */}
+      <EffectStack 
+        effects={effects} 
+        onChange={handleEffectsChange}
+      />
+
+      <div className="h-px bg-border" />
+
+      {/* Legacy Blur Effects */}
       <div className="space-y-4">
+        <p className="text-xs font-medium text-muted-foreground">Basic Effects</p>
         <div>
           <CustomSlider
             label="Blur"
@@ -63,7 +80,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
             unit="px"
           />
           <p 
-            className="text-[10px] text-zinc-500 dark:text-zinc-400 px-1 mt-1"
+            className="text-[10px] text-muted-foreground px-1 mt-1"
             id="blur-description"
           >
             Apply gaussian blur to the entire shape
@@ -81,7 +98,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
             unit="px"
           />
           <p 
-            className="text-[10px] text-zinc-500 dark:text-zinc-400 px-1 mt-1"
+            className="text-[10px] text-muted-foreground px-1 mt-1"
             id="backdrop-blur-description"
           >
             Blur the background (glassmorphism effect)
@@ -89,26 +106,26 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
         </div>
       </div>
 
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+      <div className="h-px bg-border" />
 
       {/* Border/Stroke Controls */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-white">Stroke</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Add border outline</p>
+            <p className="text-sm font-medium text-foreground">Stroke</p>
+            <p className="text-[10px] text-muted-foreground">Add border outline</p>
           </div>
           <button
             onClick={handleBorderToggle}
             className={`relative w-10 h-6 rounded-full transition-all ${
-              state.borderEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-700'
+              state.borderEnabled ? 'bg-primary' : 'bg-muted'
             }`}
             role="switch"
             aria-checked={state.borderEnabled}
             aria-label={state.borderEnabled ? "Disable stroke" : "Enable stroke"}
           >
             <span
-              className="block w-4 h-4 rounded-full bg-white shadow-sm transition-transform"
+              className="block w-4 h-4 rounded-full bg-background shadow-sm transition-transform"
               style={{
                 transform: state.borderEnabled ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
                 margin: '0.25rem',
@@ -121,11 +138,11 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
           <div className="space-y-4 animate-fade-in">
             {/* Stroke Color */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">
+              <label className="text-xs font-medium text-muted-foreground px-1">
                 Stroke Color
               </label>
-              <div className="flex items-center p-1 bg-zinc-100 dark:bg-zinc-800 rounded-[0.625rem]">
-                <div className="relative size-7 mr-3 rounded-md border border-zinc-200/50 dark:border-zinc-700/50 overflow-hidden">
+              <div className="flex items-center p-1 bg-muted rounded-[0.625rem]">
+                <div className="relative size-7 mr-3 rounded-md border border-border overflow-hidden">
                   <input
                     type="color"
                     value={state.strokeColor || '#000000'}
@@ -139,7 +156,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
                   type="text"
                   value={(state.strokeColor || '#000000').toUpperCase()}
                   onChange={(e) => updateState({ strokeColor: e.target.value })}
-                  className="flex-1 bg-transparent border-none text-sm font-mono text-zinc-700 dark:text-zinc-300 uppercase focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-sm font-mono text-foreground uppercase focus:outline-none"
                   maxLength={7}
                   placeholder="#000000"
                   aria-label="Stroke hex color code"
@@ -159,7 +176,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
 
             {/* Position */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">Position</p>
+              <p className="text-xs font-medium text-muted-foreground px-1">Position</p>
               <div className="grid grid-cols-3 gap-2" role="group" aria-label="Stroke position">
                 {(['inside', 'center', 'outside'] as const).map((pos) => (
                   <button
@@ -167,8 +184,8 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
                     onClick={() => updateState({ strokePosition: pos })}
                     className={`px-3 py-2 text-xs font-medium rounded-lg transition-all capitalize ${
                       state.strokePosition === pos
-                        ? 'bg-indigo-500 text-white shadow-md'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                     aria-pressed={state.strokePosition === pos}
                   >
@@ -180,7 +197,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
 
             {/* Style */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">Style</p>
+              <p className="text-xs font-medium text-muted-foreground px-1">Style</p>
               <div className="grid grid-cols-3 gap-2" role="group" aria-label="Stroke style">
                 {(['solid', 'dashed', 'dotted'] as const).map((style) => (
                   <button
@@ -188,8 +205,8 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
                     onClick={() => updateState({ strokeStyle: style })}
                     className={`px-3 py-2 text-xs font-medium rounded-lg transition-all capitalize ${
                       state.strokeStyle === style
-                        ? 'bg-indigo-500 text-white shadow-md'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                     aria-pressed={state.strokeStyle === style}
                   >
@@ -212,26 +229,26 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
         )}
       </div>
 
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+      <div className="h-px bg-border" />
 
       {/* Noise Overlay */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm font-medium text-zinc-900 dark:text-white">Noise Overlay</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">Add texture grain</p>
+            <p className="text-sm font-medium text-foreground">Noise Overlay</p>
+            <p className="text-[10px] text-muted-foreground">Add texture grain</p>
           </div>
           <button
             onClick={handleNoiseToggle}
             className={`relative w-10 h-6 rounded-full transition-all ${
-              state.noiseEnabled ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-700'
+              state.noiseEnabled ? 'bg-primary' : 'bg-muted'
             }`}
             role="switch"
             aria-checked={state.noiseEnabled}
             aria-label={state.noiseEnabled ? "Disable noise overlay" : "Enable noise overlay"}
           >
             <span
-              className="block w-4 h-4 rounded-full bg-white shadow-sm transition-transform"
+              className="block w-4 h-4 rounded-full bg-background shadow-sm transition-transform"
               style={{
                 transform: state.noiseEnabled ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
                 margin: '0.25rem',
@@ -256,8 +273,8 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
       </div>
 
       {/* Quick Effect Presets */}
-      <div className="space-y-2 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-        <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1">Quick Effects</p>
+      <div className="space-y-2 pt-4 border-t border-border">
+        <p className="text-xs font-medium text-muted-foreground px-1">Quick Effects</p>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => updateState({ 
@@ -266,7 +283,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
               borderEnabled: false, 
               noiseEnabled: false 
             })}
-            className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 rounded-lg transition-colors"
             aria-label="Apply no effects preset"
           >
             None
@@ -282,7 +299,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
               strokePosition: 'inside',
               noiseEnabled: false 
             })}
-            className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 rounded-lg transition-colors"
             aria-label="Apply glass effect preset"
           >
             Glass
@@ -294,7 +311,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
               borderEnabled: false, 
               noiseEnabled: false 
             })}
-            className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 rounded-lg transition-colors"
             aria-label="Apply soft effect preset"
           >
             Soft
@@ -307,7 +324,7 @@ export const EffectsTab: FC<EffectsTabProps> = ({ state, updateState }) => {
               noiseEnabled: true, 
               noiseIntensity: 40 
             })}
-            className="px-3 py-2 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-3 py-2 text-xs font-medium bg-muted hover:bg-muted/80 rounded-lg transition-colors"
             aria-label="Apply textured effect preset"
           >
             Textured
