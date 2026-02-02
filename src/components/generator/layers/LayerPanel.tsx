@@ -29,7 +29,10 @@ interface LayerPanelProps {
   onDuplicateLayer: (layerId: string) => void;
   onToggleVisibility: (layerId: string) => void;
   onToggleLock: (layerId: string) => void;
+  onToggleSolo: (layerId: string) => void;
   onReorderLayers: (startIndex: number, endIndex: number) => void;
+  onMoveLayer: (layerId: string, direction: 'up' | 'down') => void;
+  onMoveLayerToIndex: (layerId: string, newIndex: number) => void;
   onSetBlendMode: (layerId: string, blendMode: BlendMode) => void;
   onSetOpacity: (layerId: string, opacity: number) => void;
   onUpdateTransform: (layerId: string, transform: Partial<Transform>) => void;
@@ -52,7 +55,10 @@ export const LayerPanel = memo<LayerPanelProps>(({
   onDuplicateLayer,
   onToggleVisibility,
   onToggleLock,
+  onToggleSolo,
   onReorderLayers,
+  onMoveLayer,
+  onMoveLayerToIndex,
   onSetBlendMode,
   onSetOpacity,
   onUpdateTransform,
@@ -140,14 +146,19 @@ export const LayerPanel = memo<LayerPanelProps>(({
               key={layer.id}
               layer={layer}
               index={index}
+              totalLayers={layers.length}
               isSelected={layer.id === selectedLayerId}
               isDragging={draggedIndex === index}
               onSelect={onSelectLayer}
               onToggleVisibility={onToggleVisibility}
               onToggleLock={onToggleLock}
+              onToggleSolo={onToggleSolo}
               onDuplicate={onDuplicateLayer}
               onRemove={onRemoveLayer}
               onRename={handleRename}
+              onSetOpacity={onSetOpacity}
+              onMoveLayer={onMoveLayer}
+              onMoveToIndex={onMoveLayerToIndex}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
