@@ -508,7 +508,7 @@ export const ControlPanel: FC<ControlPanelProps> = ({
             <PresetsTab currentState={state} onLoadPreset={loadState} />
           )}
           {activeCategory === 'css' && (
-            <CssTab state={state} theme={theme} />
+            <CssTab state={state} theme={theme} pathData={pathData} />
           )}
           {activeCategory === 'export' && (
             <>

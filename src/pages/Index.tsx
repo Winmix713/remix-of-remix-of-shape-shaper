@@ -1,19 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Header } from '../components/layout/Header';
+import { StatusBar } from '../components/layout/StatusBar';
 import { PreviewArea } from '../components/generator/PreviewArea';
 import { ControlPanel } from '../components/generator/ControlPanel';
 import { LayerPanel } from '../components/generator/layers';
 import { CanvasContainer } from '../components/generator/CanvasContainer';
+import { DeviceFrame } from '../components/generator/DeviceFrame';
+import { InspectorOverlay } from '../components/generator/InspectorOverlay';
 import { KeyboardShortcutsModal } from '../components/generator/modals/KeyboardShortcutsModal';
 import { useSuperellipse } from '../hooks/useSuperellipse';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useCanvasNavigation } from '../hooks/useCanvasNavigation';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useViewMode } from '../hooks/useViewMode';
+import { useInspector } from '../hooks/useInspector';
+import { generateTailwindSnippet } from '../utils/tailwindGenerator';
 
 const Index: React.FC = () => {
   const { state, updateState, updateGradientStop, resetState, loadState, randomizeGlow, pathData } = useSuperellipse();
   const layerManager = useLayerManager();
   const canvasNav = useCanvasNavigation();
+  const { viewMode, setViewMode, device, setDevice } = useViewMode();
+  const { inspector, toggleInspector, setHovered, setSelected, clearSelection } = useInspector();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
@@ -73,7 +81,6 @@ const Index: React.FC = () => {
     }
   }, [layerManager]);
 
-  // Setup keyboard shortcuts
   useKeyboardShortcuts({
     enabled: true,
     handlers: {
@@ -94,65 +101,125 @@ const Index: React.FC = () => {
     },
   });
 
+  // Generated code for Code view
+  const codeContent = useMemo(() => {
+    return generateTailwindSnippet(state, pathData);
+  }, [state, pathData]);
+
   return (
     <div className="bg-background text-foreground flex flex-col h-screen overflow-hidden font-sans transition-colors duration-300">
-      <Header theme={theme} toggleTheme={toggleTheme} />
+      <Header 
+        theme={theme} 
+        toggleTheme={toggleTheme} 
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        device={device}
+        onDeviceChange={setDevice}
+        inspectorActive={inspector.active}
+        onToggleInspector={toggleInspector}
+      />
       
       <main id="main-content" className="flex-1 flex overflow-hidden relative">
-        {/* Layer Panel - Left Sidebar */}
-        <LayerPanel
-          layers={layerManager.layers}
-          selectedLayerId={layerManager.selectedLayerId}
-          selectedLayer={layerManager.selectedLayer}
-          onSelectLayer={layerManager.selectLayer}
-          onAddLayer={layerManager.addLayer}
-          onRemoveLayer={layerManager.removeLayer}
-          onUpdateLayer={layerManager.updateLayer}
-          onDuplicateLayer={layerManager.duplicateLayer}
-          onToggleVisibility={layerManager.toggleVisibility}
-          onToggleLock={layerManager.toggleLock}
-          onToggleSolo={layerManager.toggleSolo}
-          onReorderLayers={layerManager.reorderLayers}
-          onMoveLayer={layerManager.moveLayer}
-          onMoveLayerToIndex={layerManager.moveLayerToIndex}
-          onSetBlendMode={layerManager.setBlendMode}
-          onSetOpacity={layerManager.setOpacity}
-          onUpdateTransform={layerManager.updateTransform}
-        />
-
-        {/* Canvas Area with Zoom/Pan */}
-        <CanvasContainer
-          zoom={canvasNav.zoom}
-          panX={canvasNav.panX}
-          panY={canvasNav.panY}
-          isPanning={canvasNav.isPanning}
-          onZoomIn={canvasNav.zoomIn}
-          onZoomOut={canvasNav.zoomOut}
-          onResetView={canvasNav.resetView}
-          onZoomTo100={canvasNav.zoomTo100}
-          containerRef={canvasNav.containerRef}
-        >
-          <PreviewArea 
-            state={state} 
-            pathData={pathData} 
-            theme={theme} 
-            onSpotlightTrigger={randomizeGlow}
+        {/* Layer Panel - Left Sidebar (hidden in code/preview modes) */}
+        {viewMode === 'canvas' && (
+          <LayerPanel
+            layers={layerManager.layers}
+            selectedLayerId={layerManager.selectedLayerId}
+            selectedLayer={layerManager.selectedLayer}
+            onSelectLayer={layerManager.selectLayer}
+            onAddLayer={layerManager.addLayer}
+            onRemoveLayer={layerManager.removeLayer}
+            onUpdateLayer={layerManager.updateLayer}
+            onDuplicateLayer={layerManager.duplicateLayer}
+            onToggleVisibility={layerManager.toggleVisibility}
+            onToggleLock={layerManager.toggleLock}
+            onToggleSolo={layerManager.toggleSolo}
+            onReorderLayers={layerManager.reorderLayers}
+            onMoveLayer={layerManager.moveLayer}
+            onMoveLayerToIndex={layerManager.moveLayerToIndex}
+            onSetBlendMode={layerManager.setBlendMode}
+            onSetOpacity={layerManager.setOpacity}
+            onUpdateTransform={layerManager.updateTransform}
           />
-        </CanvasContainer>
+        )}
 
-        {/* Control Panel - Right Sidebar */}
-        <ControlPanel 
-          state={state} 
-          updateState={updateState} 
-          updateGradientStop={updateGradientStop}
-          resetState={resetState}
-          loadState={loadState}
-          randomizeGlow={randomizeGlow}
-          pathData={pathData}
-          theme={theme}
-          onThemeChange={setTheme}
-        />
+        {/* Code View */}
+        {viewMode === 'code' && (
+          <div className="flex-1 overflow-auto bg-muted p-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-background border border-border rounded-xl overflow-hidden shadow-lg">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/50">
+                  <span className="text-xs font-medium text-muted-foreground">Generated Code</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                  </div>
+                </div>
+                <pre className="p-6 text-sm font-mono leading-relaxed text-foreground overflow-x-auto whitespace-pre-wrap">
+                  {codeContent}
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Canvas / Preview Area */}
+        {(viewMode === 'canvas' || viewMode === 'preview') && (
+          <CanvasContainer
+            zoom={canvasNav.zoom}
+            panX={canvasNav.panX}
+            panY={canvasNav.panY}
+            isPanning={canvasNav.isPanning}
+            onZoomIn={canvasNav.zoomIn}
+            onZoomOut={canvasNav.zoomOut}
+            onResetView={canvasNav.resetView}
+            onZoomTo100={canvasNav.zoomTo100}
+            containerRef={canvasNav.containerRef}
+          >
+            <DeviceFrame device={device}>
+              <div className="relative">
+                <PreviewArea 
+                  state={state} 
+                  pathData={pathData} 
+                  theme={theme} 
+                  onSpotlightTrigger={randomizeGlow}
+                />
+                <InspectorOverlay
+                  inspector={inspector}
+                  shapeWidth={state.width}
+                  shapeHeight={state.height}
+                  onHover={setHovered}
+                  onSelect={setSelected}
+                />
+              </div>
+            </DeviceFrame>
+          </CanvasContainer>
+        )}
+
+        {/* Control Panel - Right Sidebar (hidden in code/preview modes) */}
+        {viewMode === 'canvas' && (
+          <ControlPanel 
+            state={state} 
+            updateState={updateState} 
+            updateGradientStop={updateGradientStop}
+            resetState={resetState}
+            loadState={loadState}
+            randomizeGlow={randomizeGlow}
+            pathData={pathData}
+            theme={theme}
+            onThemeChange={setTheme}
+          />
+        )}
       </main>
+
+      {/* Status Bar */}
+      <StatusBar
+        dimensions={{ width: state.width, height: state.height }}
+        zoom={canvasNav.zoom}
+        activeLayer={layerManager.selectedLayer?.name ?? null}
+        inspectorActive={inspector.active}
+      />
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal 

@@ -90,12 +90,53 @@ export const LayerPanel = memo<LayerPanelProps>(({
     onUpdateLayer(layerId, { name: newName });
   }, [onUpdateLayer]);
 
+  const [activeTab, setActiveTab] = useState<'layers' | 'assets' | 'pages'>('layers');
+
   return (
     <aside 
       className="w-60 bg-background border-r border-border flex flex-col h-full overflow-hidden"
       role="complementary"
       aria-label="Layer panel"
     >
+      {/* Sidebar Tabs */}
+      <div className="flex items-center border-b border-border shrink-0">
+        {(['layers', 'assets', 'pages'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "flex-1 px-2 py-2 text-xs font-medium capitalize transition-colors",
+              activeTab === tab
+                ? "text-foreground bg-muted/50 border-b-2 border-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Pages placeholder */}
+      {activeTab === 'pages' && (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+          <Layers className="w-8 h-8 text-muted-foreground/30 mb-2" />
+          <p className="text-xs text-muted-foreground">Pages</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-1">Multi-page support coming soon</p>
+        </div>
+      )}
+
+      {/* Assets placeholder */}
+      {activeTab === 'assets' && (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+          <Image className="w-8 h-8 text-muted-foreground/30 mb-2" />
+          <p className="text-xs text-muted-foreground">Assets</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-1">Use the Assets tab in the control panel</p>
+        </div>
+      )}
+
+      {/* Layers tab content */}
+      {activeTab === 'layers' && (
+      <>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
@@ -216,6 +257,8 @@ export const LayerPanel = memo<LayerPanelProps>(({
             </div>
           </CollapsibleContent>
         </Collapsible>
+      )}
+      </>
       )}
     </aside>
   );
