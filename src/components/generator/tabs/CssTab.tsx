@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Copy, Check, Download } from 'lucide-react';
 import { SuperellipseState } from '../../../hooks/useSuperellipse';
+import { generateTailwindClasses } from '../../../utils/tailwindGenerator';
 
 interface CssTabProps {
   state: SuperellipseState;
   theme: 'light' | 'dark';
+  pathData?: string;
 }
 
 // Helper function to generate phone frame CSS
@@ -209,13 +211,17 @@ function generateDetailedCSS(state: SuperellipseState, theme: 'light' | 'dark'):
   return lines.join('\n');
 }
 
-export const CssTab: React.FC<CssTabProps> = ({ state, theme }) => {
+export const CssTab: React.FC<CssTabProps> = ({ state, theme, pathData = '' }) => {
   const [copied, setCopied] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'css' | 'scss'>('css');
+  const [tailwindCopied, setTailwindCopied] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'css' | 'scss' | 'tailwind'>('css');
   
   const cssCode = useMemo(() => {
+    if (exportFormat === 'tailwind') {
+      return generateTailwindClasses(state, pathData);
+    }
     return generateDetailedCSS(state, theme);
-  }, [state, theme]);
+  }, [state, theme, exportFormat, pathData]);
 
   const handleCopy = async () => {
     try {
@@ -252,27 +258,20 @@ export const CssTab: React.FC<CssTabProps> = ({ state, theme }) => {
         
         <div className="flex items-center gap-2">
           {/* Format Toggle */}
-          <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700">
-            <button
-              onClick={() => setExportFormat('css')}
-              className={`px-2 py-1 text-[10px] font-medium rounded transition-all ${
-                exportFormat === 'css'
-                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
-            >
-              CSS
-            </button>
-            <button
-              onClick={() => setExportFormat('scss')}
-              className={`px-2 py-1 text-[10px] font-medium rounded transition-all ${
-                exportFormat === 'scss'
-                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
-            >
-              SCSS
-            </button>
+          <div className="flex bg-muted rounded-lg p-0.5 border border-border">
+            {(['css', 'scss', 'tailwind'] as const).map((fmt) => (
+              <button
+                key={fmt}
+                onClick={() => setExportFormat(fmt)}
+                className={`px-2 py-1 text-[10px] font-medium rounded transition-all ${
+                  exportFormat === fmt
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {fmt.toUpperCase()}
+              </button>
+            ))}
           </div>
 
           {/* Download Button */}
