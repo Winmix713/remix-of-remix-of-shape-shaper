@@ -1,9 +1,32 @@
-import React, { useState } from 'react';
-import { Shuffle, Sun, Moon } from 'lucide-react';
+/**
+ * GlowTab Component — Refactored
+ * 
+ * Real-time CSS progressive blur glow effect editor.
+ * Based on 4-layer OKLCH glow system with shape, position, and noise controls.
+ * 
+ * Sections:
+ * 1. Base Color (OKLCH) — Lightness, Chroma, Hue + HEX sync
+ * 2. Shape Configuration — Gradient Mask Size, Glow Scale
+ * 3. Glow Position — Horizontal (X), Vertical (Y)
+ * 4. Noise Overlay — Toggle + Intensity
+ * 5. Advanced Effects — Opacity, Blur, Spread
+ * 6. Glow Animation — Pulse, Rotate, Wave
+ */
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { 
+  Shuffle, Sun, Moon, Layers, Move, Sparkles, 
+  Palette, SlidersHorizontal, Info
+} from 'lucide-react';
 import { SuperellipseState } from '../../../hooks/useSuperellipse';
 import { CustomSlider } from '../CustomSlider';
 import { HexColorPicker } from '../HexColorPicker';
 import { GlowAnimationControls, GlowAnimationState, DEFAULT_GLOW_ANIMATION } from '../GlowAnimationControls';
+import { CollapsibleSection } from '../CollapsibleSection';
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface GlowTabProps {
   state: SuperellipseState;
@@ -13,193 +36,199 @@ interface GlowTabProps {
   onThemeChange?: (theme: 'light' | 'dark') => void;
 }
 
-export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomize, theme = 'dark', onThemeChange }) => {
-  const color = `oklch(${state.lightness}% ${state.chroma} ${state.hue})`;
-  const [glowAnimation, setGlowAnimation] = useState<GlowAnimationState>(DEFAULT_GLOW_ANIMATION);
+// ============================================================================
+// Sub-Components
+// ============================================================================
 
-  const handleHexColorChange = (hue: number, chroma: number, lightness: number) => {
-    updateState({ hue, chroma, lightness });
-  };
-
-  const updateAnimation = (updates: Partial<GlowAnimationState>) => {
-    setGlowAnimation(prev => ({ ...prev, ...updates }));
-  };
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Main Toggle + Theme Selector */}
-      <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
-        <div className="flex-1">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Glow Effect</h2>
-          <p className="text-[10px] text-zinc-500">4-layer progressive blur</p>
-        </div>
-        
-        {/* Theme Selector */}
-        {onThemeChange && (
-          <div className="flex items-center gap-1 mr-3" role="group" aria-label="Theme selection">
-            <button
-              onClick={() => onThemeChange('light')}
-              className={`p-1.5 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                theme === 'light'
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500 hover:bg-zinc-300 dark:hover:bg-zinc-600'
-              }`}
-              title="Light mode"
-              aria-label="Switch to light theme"
-              aria-pressed={theme === 'light'}
-            >
-              <Sun className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => onThemeChange('dark')}
-              className={`p-1.5 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                theme === 'dark'
-                  ? 'bg-indigo-500 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500 hover:bg-zinc-300 dark:hover:bg-zinc-600'
-              }`}
-              title="Dark mode"
-              aria-label="Switch to dark theme"
-              aria-pressed={theme === 'dark'}
-            >
-              <Moon className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-        
+/** Glow enable toggle + theme selector header */
+const GlowHeader: React.FC<{
+  enabled: boolean;
+  onToggle: () => void;
+  theme: 'light' | 'dark';
+  onThemeChange?: (theme: 'light' | 'dark') => void;
+}> = ({ enabled, onToggle, theme, onThemeChange }) => (
+  <div className="flex items-center justify-between bg-muted/50 p-3 rounded-xl border border-border">
+    <div className="flex-1">
+      <h2 className="text-sm font-semibold text-foreground">Glow Effect</h2>
+      <p className="text-[10px] text-muted-foreground">4-layer progressive blur</p>
+    </div>
+    
+    {onThemeChange && (
+      <div className="flex items-center gap-1 mr-3" role="group" aria-label="Theme selection">
         <button
-          onClick={() => updateState({ enabled: !state.enabled })}
-          role="switch"
-          aria-checked={state.enabled}
-          aria-label="Toggle glow effect"
-          className={`relative w-10 h-6 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-            state.enabled ? 'bg-indigo-500' : 'bg-zinc-200 dark:bg-zinc-700'
+          onClick={() => onThemeChange('light')}
+          className={`p-1.5 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+            theme === 'light'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-accent'
           }`}
+          title="Light mode"
+          aria-label="Switch to light theme"
+          aria-pressed={theme === 'light'}
         >
-          <span
-            className="block w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200"
-            style={{
-              transform: state.enabled ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
-              margin: '0.25rem',
-            }}
-            aria-hidden="true"
-          />
+          <Sun className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+        <button
+          onClick={() => onThemeChange('dark')}
+          className={`p-1.5 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+            theme === 'dark'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground hover:bg-accent'
+          }`}
+          title="Dark mode"
+          aria-label="Switch to dark theme"
+          aria-pressed={theme === 'dark'}
+        >
+          <Moon className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
+    )}
+    
+    <button
+      onClick={onToggle}
+      role="switch"
+      aria-checked={enabled}
+      aria-label="Toggle glow effect"
+      className={`relative w-10 h-6 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+        enabled ? 'bg-primary' : 'bg-muted-foreground/20'
+      }`}
+    >
+      <span
+        className="block w-4 h-4 rounded-full bg-background shadow-sm transition-transform duration-200"
+        style={{
+          transform: enabled ? 'translateX(1.25rem)' : 'translateX(0.125rem)',
+          margin: '0.25rem',
+        }}
+        aria-hidden="true"
+      />
+    </button>
+  </div>
+);
 
-      {/* Hex Color Picker */}
-      <HexColorPicker
-        hue={state.hue}
-        chroma={state.chroma}
-        lightness={state.lightness}
-        onColorChange={handleHexColorChange}
+/** Info tooltip with computed values */
+const ComputedValue: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-center justify-between text-[10px]">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="font-mono text-foreground/70">{value}</span>
+  </div>
+);
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+export const GlowTab: React.FC<GlowTabProps> = ({ 
+  state, updateState, onRandomize, theme = 'dark', onThemeChange 
+}) => {
+  const [glowAnimation, setGlowAnimation] = useState<GlowAnimationState>(DEFAULT_GLOW_ANIMATION);
+
+  const handleHexColorChange = useCallback((hue: number, chroma: number, lightness: number) => {
+    updateState({ hue, chroma, lightness });
+  }, [updateState]);
+
+  const updateAnimation = useCallback((updates: Partial<GlowAnimationState>) => {
+    setGlowAnimation(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Computed values from documentation formulas
+  const computedOuterHeight = useMemo(() => 
+    Math.round(1800 * state.glowMaskSize + 600), [state.glowMaskSize]
+  );
+
+  const oklchString = useMemo(() => 
+    `oklch(${Math.round(state.lightness)}% ${state.chroma.toFixed(3)} ${Math.round(state.hue)})`,
+    [state.lightness, state.chroma, state.hue]
+  );
+
+  // Hue rainbow gradient for the slider track
+  const hueGradient = 'linear-gradient(to right, oklch(70% 0.25 0), oklch(70% 0.25 60), oklch(70% 0.25 120), oklch(70% 0.25 180), oklch(70% 0.25 240), oklch(70% 0.25 300), oklch(70% 0.25 360))';
+  
+  // Chroma gradient: gray to vibrant at current hue
+  const chromaGradient = `linear-gradient(to right, oklch(${state.lightness}% 0 ${state.hue}), oklch(${state.lightness}% 0.4 ${state.hue}))`;
+  
+  // Lightness gradient: black to white
+  const lightnessGradient = `linear-gradient(to right, oklch(0% ${state.chroma} ${state.hue}), oklch(100% ${state.chroma} ${state.hue}))`;
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Header: Toggle + Theme */}
+      <GlowHeader
+        enabled={state.enabled}
+        onToggle={() => updateState({ enabled: !state.enabled })}
+        theme={theme}
+        onThemeChange={onThemeChange}
       />
 
-      {/* OKLCH Sliders */}
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] text-zinc-500">
-            <label htmlFor="hue-slider">Hue</label>
-            <span aria-live="polite">{state.hue}°</span>
-          </div>
-          <div className="relative h-4 rounded-full overflow-hidden">
-            <div 
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(to right, #ef4444, #eab308, #22c55e, #3b82f6, #a855f7, #ef4444)' }}
-              aria-hidden="true"
-            />
-            <input
-              id="hue-slider"
-              type="range"
-              min={0}
-              max={360}
-              value={state.hue}
-              onChange={(e) => updateState({ hue: Number(e.target.value) })}
-              className="absolute inset-0 w-full opacity-0 cursor-pointer z-10 focus:outline-none"
-              aria-label="Hue slider"
-              aria-valuemin={0}
-              aria-valuemax={360}
-              aria-valuenow={state.hue}
-              aria-valuetext={`${state.hue} degrees`}
-            />
-            <div
-              className="absolute top-0 h-full border-r-2 border-white shadow-sm pointer-events-none"
-              style={{ width: `${(state.hue / 360) * 100}%` }}
-              aria-hidden="true"
-            />
-          </div>
+      {/* ================================================================ */}
+      {/* Section 1: Base Color — OKLCH Color Space                        */}
+      {/* ================================================================ */}
+      <CollapsibleSection
+        title="Base Color (OKLCH)"
+        icon={<Palette className="w-3.5 h-3.5 text-muted-foreground" />}
+        defaultOpen={true}
+      >
+        {/* HEX Color Picker with bidirectional sync */}
+        <HexColorPicker
+          hue={state.hue}
+          chroma={state.chroma}
+          lightness={state.lightness}
+          onColorChange={handleHexColorChange}
+        />
+
+        <div className="space-y-3 mt-3">
+          {/* Lightness: 0-100% — perceptually uniform brightness */}
+          <CustomSlider
+            label="Lightness"
+            value={state.lightness}
+            min={0}
+            max={100}
+            step={1}
+            onChange={(val) => updateState({ lightness: val })}
+            unit="%"
+            gradient={lightnessGradient}
+          />
+
+          {/* Chroma: 0-0.400 — color saturation/vividness */}
+          <CustomSlider
+            label="Chroma"
+            value={state.chroma}
+            min={0}
+            max={0.4}
+            step={0.001}
+            onChange={(val) => updateState({ chroma: val })}
+            gradient={chromaGradient}
+          />
+
+          {/* Hue: 0-360° — full color wheel rotation */}
+          <CustomSlider
+            label="Hue"
+            value={state.hue}
+            min={0}
+            max={360}
+            step={1}
+            onChange={(val) => updateState({ hue: val })}
+            unit="°"
+            gradient={hueGradient}
+          />
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] text-zinc-500">
-            <label htmlFor="chroma-slider">Chroma</label>
-            <span aria-live="polite">{state.chroma.toFixed(2)}</span>
-          </div>
-          <div className="relative h-4 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-            <input
-              id="chroma-slider"
-              type="range"
-              min={0}
-              max={0.4}
-              step={0.01}
-              value={state.chroma}
-              onChange={(e) => updateState({ chroma: Number(e.target.value) })}
-              className="absolute inset-0 w-full opacity-0 cursor-pointer z-10 focus:outline-none"
-              aria-label="Chroma slider"
-              aria-valuemin={0}
-              aria-valuemax={0.4}
-              aria-valuenow={state.chroma}
-              aria-valuetext={state.chroma.toFixed(2)}
-            />
-            <div
-              className="absolute top-0 h-full bg-zinc-400 dark:bg-zinc-500 rounded-full transition-all"
-              style={{ width: `${(state.chroma / 0.4) * 100}%` }}
-              aria-hidden="true"
-            />
-          </div>
+        {/* OKLCH computed string */}
+        <div className="mt-3 p-2 bg-muted/50 rounded-lg border border-border">
+          <ComputedValue label="OKLCH" value={oklchString} />
         </div>
+      </CollapsibleSection>
 
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px] text-zinc-500">
-            <label htmlFor="lightness-slider">Lightness</label>
-            <span aria-live="polite">{Math.round(state.lightness)}%</span>
-          </div>
-          <div className="relative h-4 rounded-full overflow-hidden">
-            <div 
-              className="absolute inset-0 opacity-30"
-              style={{ background: 'linear-gradient(to right, #000000, #ffffff)' }}
-              aria-hidden="true"
-            />
-            <input
-              id="lightness-slider"
-              type="range"
-              min={0}
-              max={100}
-              value={state.lightness}
-              onChange={(e) => updateState({ lightness: Number(e.target.value) })}
-              className="absolute inset-0 w-full opacity-0 cursor-pointer z-10 focus:outline-none"
-              aria-label="Lightness slider"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={state.lightness}
-              aria-valuetext={`${Math.round(state.lightness)} percent`}
-            />
-            <div
-              className="absolute top-0 h-full bg-zinc-400 dark:bg-zinc-500 rounded-full transition-all"
-              style={{ width: `${state.lightness}%` }}
-              aria-hidden="true"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
-
-      {/* Shape Configuration */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Glow Shape</p>
-        
+      {/* ================================================================ */}
+      {/* Section 2: Shape Configuration                                   */}
+      {/* ================================================================ */}
+      <CollapsibleSection
+        title="Shape Configuration"
+        icon={<Layers className="w-3.5 h-3.5 text-muted-foreground" />}
+        defaultOpen={true}
+      >
+        {/* Gradient Mask Size: 0-100% → height = 1800 × maskSize + 600 */}
         <CustomSlider
-          label="Mask Size"
+          label="Gradient Mask Size"
           value={Math.round(state.glowMaskSize * 100)}
           min={0}
           max={100}
@@ -207,9 +236,16 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
           onChange={(val) => updateState({ glowMaskSize: val / 100 })}
           unit="%"
         />
+        <div className="px-1">
+          <ComputedValue 
+            label="Outer glow height" 
+            value={`${computedOuterHeight}px`} 
+          />
+        </div>
 
+        {/* Glow Scale: 0.5x-3.0x — CSS transform: scale() */}
         <CustomSlider
-          label="Scale"
+          label="Glow Scale"
           value={state.glowScale}
           min={0.5}
           max={3}
@@ -217,16 +253,19 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
           onChange={(val) => updateState({ glowScale: val })}
           unit="x"
         />
-      </div>
+      </CollapsibleSection>
 
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
-
-      {/* Position */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Position</p>
-        
+      {/* ================================================================ */}
+      {/* Section 3: Glow Position                                         */}
+      {/* ================================================================ */}
+      <CollapsibleSection
+        title="Glow Position"
+        icon={<Move className="w-3.5 h-3.5 text-muted-foreground" />}
+        defaultOpen={false}
+      >
+        {/* Horizontal (X): -800px to -350px */}
         <CustomSlider
-          label="Offset X"
+          label="Horizontal (X)"
           value={state.glowPositionX}
           min={-1200}
           max={400}
@@ -234,8 +273,10 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
           onChange={(val) => updateState({ glowPositionX: val })}
           unit="px"
         />
+
+        {/* Vertical (Y): -1400px to -600px */}
         <CustomSlider
-          label="Offset Y"
+          label="Vertical (Y)"
           value={state.glowPositionY}
           min={-1800}
           max={400}
@@ -243,14 +284,74 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
           onChange={(val) => updateState({ glowPositionY: val })}
           unit="px"
         />
-      </div>
 
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+        {/* Position + Scale interaction tip */}
+        <div className="flex items-start gap-2 p-2 bg-muted/30 rounded-lg border border-border">
+          <Info className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Position and Scale interact multiplicatively. Adjust Scale first, then fine-tune Position.
+          </p>
+        </div>
+      </CollapsibleSection>
 
-      {/* Advanced Glow */}
-      <div className="space-y-4">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Advanced Effects</p>
-        
+      {/* ================================================================ */}
+      {/* Section 4: Noise Overlay                                         */}
+      {/* ================================================================ */}
+      <CollapsibleSection
+        title="Noise Overlay"
+        icon={<Sparkles className="w-3.5 h-3.5 text-muted-foreground" />}
+        defaultOpen={false}
+      >
+        {/* Noise Toggle */}
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
+          <div>
+            <p className="text-xs font-medium text-foreground">Enable Noise</p>
+            <p className="text-[10px] text-muted-foreground">SVG feTurbulence grain texture</p>
+          </div>
+          <button
+            onClick={() => updateState({ noiseEnabled: !state.noiseEnabled })}
+            role="switch"
+            aria-checked={state.noiseEnabled}
+            aria-label="Toggle noise overlay"
+            className={`relative w-10 h-6 rounded-full transition-colors ${
+              state.noiseEnabled ? 'bg-primary' : 'bg-muted-foreground/20'
+            }`}
+          >
+            <span
+              className={`absolute top-1 w-4 h-4 rounded-full bg-background shadow-sm transition-transform ${
+                state.noiseEnabled ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Noise Intensity: 0-100% */}
+        {state.noiseEnabled && (
+          <div className="space-y-3 pt-2 animate-fade-in">
+            <CustomSlider
+              label="Noise Intensity"
+              value={state.noiseIntensity}
+              min={0}
+              max={100}
+              step={1}
+              onChange={(val) => updateState({ noiseIntensity: val })}
+              unit="%"
+            />
+            <p className="text-[10px] text-muted-foreground px-1">
+              5-15%: subtle texture · 30-50%: visible grain · 70%+: heavy stylized
+            </p>
+          </div>
+        )}
+      </CollapsibleSection>
+
+      {/* ================================================================ */}
+      {/* Section 5: Advanced Effects                                       */}
+      {/* ================================================================ */}
+      <CollapsibleSection
+        title="Advanced Effects"
+        icon={<SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />}
+        defaultOpen={false}
+      >
         <CustomSlider
           label="Glow Intensity"
           value={state.glowOpacity}
@@ -280,11 +381,20 @@ export const GlowTab: React.FC<GlowTabProps> = ({ state, updateState, onRandomiz
           onChange={(val) => updateState({ glowSpread: val })}
           unit="%"
         />
-      </div>
 
-      {/* Animation Controls */}
-      <div className="h-px bg-muted" />
-      
+        {/* Layer info */}
+        <div className="p-2 bg-muted/30 rounded-lg border border-border space-y-1">
+          <p className="text-[10px] font-medium text-muted-foreground">4-Layer System</p>
+          <ComputedValue label="Outer (180px blur)" value="40% opacity" />
+          <ComputedValue label="Mid (120px blur)" value="60% opacity" />
+          <ComputedValue label="Inner (60px blur)" value="100% opacity" />
+          <ComputedValue label="Core white (80px)" value="40% opacity" />
+        </div>
+      </CollapsibleSection>
+
+      {/* ================================================================ */}
+      {/* Section 6: Glow Animation                                        */}
+      {/* ================================================================ */}
       <GlowAnimationControls
         animation={glowAnimation}
         onUpdateAnimation={updateAnimation}

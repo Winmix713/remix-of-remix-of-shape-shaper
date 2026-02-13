@@ -1,4 +1,11 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * HexColorPicker Component
+ * 
+ * Bidirectional OKLCH ↔ HEX color picker with native color input.
+ * Uses semantic design tokens for consistent theming.
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface HexColorPickerProps {
   hue: number;
@@ -7,13 +14,11 @@ interface HexColorPickerProps {
   onColorChange: (hue: number, chroma: number, lightness: number) => void;
 }
 
-// Convert OKLCH to approximate Hex (simplified conversion)
+// Simplified OKLCH → HSL → HEX conversion
 function oklchToHex(h: number, c: number, l: number): string {
-  // Simplified OKLCH to HSL approximation
   const hsl_h = h;
   const hsl_s = Math.min(100, c * 300);
   const hsl_l = l;
-  
   return hslToHex(hsl_h, hsl_s, hsl_l);
 }
 
@@ -29,7 +34,7 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
-// Convert Hex to OKLCH approximation
+// HEX → OKLCH approximation
 function hexToOklch(hex: string): { h: number; c: number; l: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -45,7 +50,6 @@ function hexToOklch(hex: string): { h: number; c: number; l: number } {
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
     switch (max) {
       case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
       case g: h = ((b - r) / d + 2) * 60; break;
@@ -53,48 +57,41 @@ function hexToOklch(hex: string): { h: number; c: number; l: number } {
     }
   }
   
-  // Convert HSL to OKLCH approximation
   return {
     h: Math.round(h),
     c: Math.round(s * 0.4 * 100) / 100,
-    l: Math.round(l * 100)
+    l: Math.round(l * 100),
   };
 }
 
 export const HexColorPicker: React.FC<HexColorPickerProps> = ({
-  hue,
-  chroma,
-  lightness,
-  onColorChange,
+  hue, chroma, lightness, onColorChange,
 }) => {
   const [hexValue, setHexValue] = useState(() => oklchToHex(hue, chroma, lightness));
   
-  // Update hex when OKLCH values change externally
   useEffect(() => {
     setHexValue(oklchToHex(hue, chroma, lightness));
   }, [hue, chroma, lightness]);
 
-  const handleHexInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHexInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setHexValue(value);
-    
-    // Validate and convert
     if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
       const { h, c, l } = hexToOklch(value);
       onColorChange(h, c, l);
     }
-  };
+  }, [onColorChange]);
 
-  const handleColorPicker = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleColorPicker = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const hex = e.target.value.toUpperCase();
     setHexValue(hex);
     const { h, c, l } = hexToOklch(hex);
     onColorChange(h, c, l);
-  };
+  }, [onColorChange]);
 
   return (
     <div className="flex items-center gap-3">
-      <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 flex-1">
+      <label className="text-xs font-medium text-muted-foreground flex-1">
         Base Color
       </label>
       <div className="flex items-center gap-2">
@@ -102,7 +99,7 @@ export const HexColorPicker: React.FC<HexColorPickerProps> = ({
           type="text"
           value={hexValue}
           onChange={handleHexInput}
-          className="w-20 h-8 px-2 text-xs font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-center text-zinc-900 dark:text-white focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500"
+          className="w-20 h-8 px-2 text-xs font-mono bg-muted border border-border rounded-lg text-center text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
           placeholder="#FF9F00"
         />
         <div className="relative">
@@ -113,7 +110,7 @@ export const HexColorPicker: React.FC<HexColorPickerProps> = ({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
           <div
-            className="w-8 h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-inner cursor-pointer"
+            className="w-8 h-8 rounded-lg border border-border shadow-inner cursor-pointer"
             style={{ backgroundColor: hexValue }}
           />
         </div>
