@@ -1,200 +1,164 @@
 
-# Nexus Editor Feature Integration - Implementation Plan
 
-## Overview
+# Javasolt Fejlesztesek - Osszesitett Prioritasos Lista
 
-Integrating the Nexus Editor capabilities into the existing Superellipse Generator Pro. The current system already has a solid three-column layout, layer management, and export system. This plan focuses on adding the missing Nexus Editor features while preserving the existing architecture.
+## Attekintes
 
-## What Already Exists (No Changes Needed)
-
-- Three-column layout (LayerPanel | Canvas | ControlPanel)
-- Layer system with drag-and-drop, visibility, lock, blend modes, opacity
-- Canvas zoom/pan with keyboard shortcuts
-- Export (SVG, PNG, CSS, JSON)
-- Keyboard shortcuts system with modal
-- Theme toggle (dark/light)
-- Preset save/load with JSON export/import
-- Gradient editor (linear, radial, conic)
-- Effects stack (blur, shadow, glow, noise)
-
-## Implementation Phases
-
-### Phase 1: Enhanced Header / Top Navigation Bar
-**File to modify:** `src/components/layout/Header.tsx`
-
-Add the Nexus Editor-style top navigation with:
-- **Left section**: Quick action buttons (Add Element, Layout, Type, Component)
-- **Center section**: View Mode Switcher (Code | Split | Design) - In our context: Canvas | Split | Fullscreen Preview
-- **Right section**: Device preview selector (Mobile 375px | Tablet 768px | Desktop 100%), Settings gear, Export button, Publish button
-- **Inspector toggle**: Pointer/Select tool for element inspection mode
-
-### Phase 2: View Mode System
-**New file:** `src/hooks/useViewMode.ts`
-**Files to modify:** `src/pages/Index.tsx`, `src/components/layout/Header.tsx`
-
-Implement three view modes:
-- **Canvas**: Current default three-column layout
-- **Code**: Show generated CSS/SVG code in full-width Monaco-style code viewer (read-only, using a styled `<pre>` block with syntax highlighting)
-- **Preview**: Full-screen preview of the superellipse without panels
-
-State management via a new `useViewMode` hook with localStorage persistence.
-
-### Phase 3: Device Preview Selector
-**New file:** `src/components/generator/DeviceFrame.tsx`
-**Files to modify:** `src/components/generator/PreviewArea.tsx`, `src/components/layout/Header.tsx`
-
-Add device frame simulation:
-- **Mobile**: 375x812 viewport frame
-- **Tablet**: 768x1024 viewport frame
-- **Desktop**: Full-width (no frame)
-
-The device selector buttons go in the Header. The PreviewArea wraps content in the appropriate device frame mockup.
-
-### Phase 4: Inspector Mode
-**New file:** `src/hooks/useInspector.ts`
-**New file:** `src/components/generator/InspectorOverlay.tsx`
-**Files to modify:** `src/components/generator/PreviewArea.tsx`, `src/pages/Index.tsx`
-
-When Inspector mode is active:
-- Hovering over the superellipse shape highlights it with a blue border
-- Clicking selects the element and populates the Properties panel (ControlPanel) with its current values
-- Shows element dimensions and position as tooltip overlays
-- The Inspector state tracks: selected element tag, computed styles, bounding box
-
-### Phase 5: Sidebar Enhancement - Pages/Layers/Assets Tabs
-**Files to modify:** `src/components/generator/layers/LayerPanel.tsx`
-
-Add tabbed navigation to the LayerPanel:
-- **Layers** (current functionality - already implemented)
-- **Assets**: Asset library browser (already exists as AssetsTab, relocate to sidebar)
-- **Pages**: Future-ready placeholder for multi-page support
-
-### Phase 6: Properties Panel Enhancement
-**New file:** `src/components/generator/PropertiesSection.tsx`
-**Files to modify:** `src/components/generator/ControlPanel.tsx`
-
-Add Nexus Editor-style properties sections as a new tab or integrated into existing tabs:
-- **Position**: Relative/Absolute/Fixed selector
-- **Size**: Width/Height with unit selector (px, %, fr, auto)
-- **Layout**: Flexbox direction, distribute, align, wrap, gap controls
-- **Effects**: Appear animation, overlay, cursor effects
-- **Tailwind Output**: Live Tailwind class generation from current shape settings with copy button
-
-### Phase 7: Tailwind CSS Output Generator
-**New file:** `src/utils/tailwindGenerator.ts`
-**Files to modify:** `src/components/generator/tabs/CssTab.tsx`
-
-Generate Tailwind utility classes from the current superellipse state:
-- Dimensions: `w-[320px] h-[400px]`
-- Border radius approximation: `rounded-[40px]`
-- Colors: `bg-[#FF9F00]`
-- Shadows: `shadow-[0_0_40px_oklch(...)]`
-- Opacity: `opacity-80`
-- Copy-to-clipboard with visual feedback
-
-### Phase 8: Status Bar
-**New file:** `src/components/layout/StatusBar.tsx`
-**Files to modify:** `src/pages/Index.tsx`
-
-Bottom status bar showing:
-- Active tool indicator (green dot)
-- Current shape dimensions (W x H)
-- Zoom level percentage
-- Active layer name
-- Export format indicator
-- Keyboard shortcut hint for current context
-
-### Phase 9: Enhanced Export with ZIP Download
-**Files to modify:** `src/components/generator/tabs/ExportTab.tsx`, `src/components/generator/modals/ExportCodeModal.tsx`
-
-Add project ZIP export:
-- Bundle all generated files (HTML, CSS, SVG, JSON config) into a ZIP
-- Use JSZip library (needs to be added as dependency)
-- Include: `index.html` with embedded shape, `styles.css`, `shape.svg`, `config.json`
-- Download as `superellipse-project-{timestamp}.zip`
+A harom fejlesztesi javaslat (v7 integracio, Nexus Editor, Comprehensive Visual Editor) osszesen ~80+ kulonbozo feature-t tartalmazott. Az alabbiakban ezeket **mar megvalosult**, **javasolt**, es **nem javasolt** kategoriakba soroltam a jelenlegi kodbazis alapjan.
 
 ---
 
-## Technical Details
+## Mar Megvalosult Fejlesztesek (NEM kell implementalni)
 
-### New Dependencies
-- No new dependencies required for core features (existing stack covers all needs)
-- Optional: JSZip for ZIP export (Phase 9)
+Ezek a funkciok mar mukodnek a rendszerben:
 
-### New Type Definitions
+- Harom oszlopos layout (LayerPanel | Canvas | ControlPanel)
+- Layer rendszer: drag-and-drop, visibility, lock, solo, blend mode, opacity, context menu
+- Canvas zoom/pan (25%-500%) billentyuparancsokkal
+- View Mode Switcher (Canvas/Code/Preview) a Header-ben
+- Device Selector (Mobile/Tablet/Desktop) DeviceFrame-mel
+- Inspector Mode (hover/select overlay)
+- StatusBar (dimenziok, zoom, aktiv reteg)
+- Keyboard Shortcuts rendszer + modal (Ctrl+/)
+- Asymmetrikus sarok szerkesztes (CornerControls)
+- Gradient Editor (linear, radial, conic) draggable stop-okkal
+- Effects Stack (Blur, Drop Shadow, Inner Shadow, Inner Glow, Noise)
+- Quick Presets Grid (iOS, Pill, Squircle, stb.)
+- Preset save/load/delete JSON export/import-tal
+- Export Modal (SVG, CSS, React, Vue kod)
+- Glow animaciok (Pulse, Rotate, Wave) CSS exporttal
+- Scene Settings (Global Scale, Gradient Mask, Noise)
+- CSS/SCSS/Tailwind kimenet a CssTab-ban
+- Tema valtas (dark/light)
 
-```text
-// src/types/editor.ts
-type ViewMode = 'canvas' | 'code' | 'preview';
-type DeviceType = 'mobile' | 'tablet' | 'desktop';
+---
 
-interface DeviceConfig {
-  type: DeviceType;
-  width: number;
-  height: number;
-  label: string;
-}
+## Javasolt Fejlesztesek (IMPLEMENT)
 
-interface InspectorState {
-  active: boolean;
-  hoveredElement: string | null;
-  selectedElement: string | null;
-  boundingBox: DOMRect | null;
-  computedStyles: Record<string, string>;
-}
+Az alabbi 6 feature hozza a legtobb ertekethat a legkevesebb komplexitassal:
 
-interface StatusBarInfo {
-  tool: string;
-  dimensions: { width: number; height: number };
-  zoom: number;
-  activeLayer: string | null;
-  exportFormat: string;
-}
-```
+### 1. iOS-stilusu CustomSlider Frissites
+**Prioritas: MAGAS | Komplexitas: Kozepes | ~3 ora**
 
-### File Creation Summary
+A jelenlegi `CustomSlider.tsx` mar letezik es jo alapokat ad, de a v7 teljesitmeny-optimalizacioi hianyoznak belole:
+- **Pointer capture** hasznalata a megbizhato drag-ert (jelenleg mousemove/mouseup)
+- **Lokalis state drag kozben**: Csak pointerUp-ra kuldi a vegleges erteket a szulonek
+- **Touch support**: pointerdown/pointermove/pointerup a touch eszkozokhoz
+- **Gradient track hatter**: Mar tamogatott (`gradient` prop), de nem hasznalt minden relevan helyen
 
-| File | Purpose |
-|------|---------|
-| `src/types/editor.ts` | Editor mode and inspector type definitions |
-| `src/hooks/useViewMode.ts` | View mode state management |
-| `src/hooks/useInspector.ts` | Inspector mode logic |
-| `src/components/generator/DeviceFrame.tsx` | Device mockup frames |
-| `src/components/generator/InspectorOverlay.tsx` | Inspector selection UI |
-| `src/components/generator/PropertiesSection.tsx` | Nexus-style property controls |
-| `src/components/layout/StatusBar.tsx` | Bottom status bar |
-| `src/utils/tailwindGenerator.ts` | Tailwind class generator |
+**Fajlok:** `src/components/generator/CustomSlider.tsx` modositasa
 
-### File Modification Summary
+### 2. Dock - Effekt Gyorsmenu
+**Prioritas: MAGAS | Komplexitas: Kozepes | ~3-4 ora**
 
-| File | Changes |
-|------|---------|
-| `src/components/layout/Header.tsx` | Full redesign: action buttons, view mode switch, device selector, inspector toggle |
-| `src/pages/Index.tsx` | View mode integration, inspector provider, status bar |
-| `src/components/generator/PreviewArea.tsx` | Device frame wrapper, inspector overlay |
-| `src/components/generator/layers/LayerPanel.tsx` | Pages/Layers/Assets tab navigation |
-| `src/components/generator/ControlPanel.tsx` | Properties section integration |
-| `src/components/generator/tabs/CssTab.tsx` | Tailwind output format |
-| `src/components/generator/tabs/ExportTab.tsx` | ZIP export option |
-| `src/components/generator/modals/ExportCodeModal.tsx` | Tailwind format addition |
+A canvas alja kozepen egy floating pill formaju gyorsmenu 4 eloredefinalt effekt preset-tel. Ez az egyik leglatvanasabb UX javitas:
+- **Glow**: Glow bekapcsolas + OKLCH szin + gradiens
+- **Glass**: Atlatszo hatter + backdrop blur + stroke
+- **Neo**: Neumorphism + iranyitott arnyek
+- **Clay**: Clay stilus + inset arnyek
 
-### Implementation Order
+Minden gomb animalt hover effekttel (translateY, scale). Egy kattintassal alkalmazhatoak.
 
-1. Editor types definition
-2. Header redesign with view mode switcher and device selector
-3. View mode system (useViewMode hook + Index.tsx integration)
-4. Device frame component and preview integration
-5. Status bar
-6. Inspector mode (hook + overlay)
-7. Sidebar tabs (Pages/Layers/Assets)
-8. Properties section
-9. Tailwind generator
-10. ZIP export
+**Uj fajl:** `src/components/generator/Dock.tsx`
 
-### Design Principles
+### 3. Canvas Context Menu
+**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2-3 ora**
 
-- Maintain the existing dark theme aesthetic
-- All new controls follow the existing component patterns (Radix UI, Tailwind, cn() utility)
-- Responsive: panels collapse on narrow screens
-- Full keyboard accessibility maintained
-- Performance: memoized components, useCallback/useMemo for expensive operations
+Jobb-klikk kontextus menu a canvas-on a leggyakoribb muveletekhez:
+- Copy SVG / Copy CSS
+- Export SVG / Export PNG
+- Duplicate Shape
+- Flip Horizontal / Vertical
+- Reset Position / Reset All
+
+A Radix UI `ContextMenu` primitiv mar elerheto a shadcn/ui-ban.
+
+**Uj fajl:** `src/components/generator/CanvasContextMenu.tsx`
+
+### 4. Canvas HUD - Vaszon Info Overlay
+**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2 ora**
+
+Az alakzat mereteit es poziciojat kozvetlenul a vasznon megjelenitio glass-style info karta:
+- Meret: `320 x 400`
+- Pozicio: `x: 0, y: 0`
+- Forgatas szog
+- Flip jelzok
+
+A canvas also kozepere kerul, atlatszo/blur hatterrel.
+
+**Uj fajl:** `src/components/generator/CanvasHUD.tsx`
+
+### 5. Hook Architektura Refaktor
+**Prioritas: KOZEPES | Komplexitas: Magas | ~5-7 ora**
+
+A `useSuperellipse.ts` (724 sor) felbontasa kisebb, specializalt hook-okra:
+- `useShapeState.ts` - Alakzat parameter kezeles (width, height, exp, corners)
+- `useHistoryState.ts` - Undo/Redo + auto-save (1s debounce, localStorage)
+- `useExportActions.ts` - SVG/PNG/CSS export logika
+- `useTransformActions.ts` - Flip, rotate, nudge
+
+A fo `useSuperellipse` hook orchestratorkent mukodik tovabbra is. Ez javitja a tesztelheto seget, karbantarthatosagot, es a jovobeni bovites lehetosegeit.
+
+### 6. Auto-Save es Undo/Redo Javitas
+**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2-3 ora**
+
+- 1 masodperces debounce-szal localStorage-ba auto-mentes
+- Undo/Redo: 500ms debounce, max 50 bejegyzes, duplikatum szures
+- Ctrl+S shortcut kezi menteshez toast visszajelzessel
+- Allapot visszaallitas oldal ujratolteskor
+
+**Fajlok:** `src/hooks/useSuperellipse.ts` (vagy az uj `useHistoryState.ts`)
+
+---
+
+## NEM Javasolt Fejlesztesek (SKIP)
+
+### macOS MenuBar es TitleBar
+**Ok:** A jelenlegi Header mar tartalmazza a szukseges funkcionalitast (View Mode, Device Selector, Inspector, Export). Egy macOS menusor es kulon TitleBar felesleges komplexitast adna, kevesebb gyakorlati ertek mellett. A Header ket reszre bontasa vizualisan szebb lenne, de a meglevo egysoros megoldas funkcionalis es tiszta.
+
+### Selection Handles (Resize/Rotate a canvason)
+**Ok:** Magas komplexitas (~6-8 ora), es a jelenlegi slider-alapu meretvaltozatas mar jol mukodik a ControlPanel-ben. A canvas-on torteno resize drag megvalositasa sok edge case-t hoz (aspect ratio lock, snap, multi-layer), es a ROI alacsony.
+
+### Snap-to-Grid es Ruler Guides
+**Ok:** A Superellipse Generator elsodlegesen egyetlen alakzat finomhangolasara szolgal, nem egy altalanos design tool. A grid/ruler funkciok multi-shape canvas-nel lennenek igazan hasznosak - ami egy jovobeli fazisban jonnte szoba.
+
+### Properties Section (Position/Size/Layout/Flexbox)
+**Ok:** Ezek a webes layout tulajdonsagok (position, flexbox direction, gap) nem relevansak egy SVG shape generatornal. A jelenlegi ControlPanel tabjai (Shape, Color, Glow, Effects) pont a megfelelo absztrakciot nyujtjak.
+
+### ZIP Export
+**Ok:** Kicsi hasznossag - a felhasznalok jellemzoen egyetlen SVG-t vagy CSS kodotreszletet masolnak, nem teljes projekteket toltenek le. A jelenlegi export modal (SVG, CSS, React, Vue) lefedte a fo use case-eket.
+
+### Onboarding Overlay
+**Ok:** A rendszer mar intuitive hasznaelhato, es a Keyboard Shortcuts Modal (Ctrl+/) eleg tajekoztatas. Egy first-run overlay inkabb irritalo lenne, mint hasznos.
+
+---
+
+## Implementacios Sorrend
+
+| # | Feature | Komplexitas | Becsult ido |
+|---|---------|-------------|-------------|
+| 1 | CustomSlider pointer capture + touch | Kozepes | 3 ora |
+| 2 | Dock effekt gyorsmenu | Kozepes | 3-4 ora |
+| 3 | Canvas Context Menu | Alacsony | 2-3 ora |
+| 4 | Canvas HUD | Alacsony | 2 ora |
+| 5 | Hook architektura refaktor | Magas | 5-7 ora |
+| 6 | Auto-save + Undo/Redo javitas | Alacsony | 2-3 ora |
+| **Osszesen** | | | **~17-22 ora** |
+
+## Technikai Reszletek
+
+### Uj Fajlok
+- `src/components/generator/Dock.tsx`
+- `src/components/generator/CanvasContextMenu.tsx`
+- `src/components/generator/CanvasHUD.tsx`
+- `src/hooks/useShapeState.ts`
+- `src/hooks/useHistoryState.ts`
+- `src/hooks/useExportActions.ts`
+- `src/hooks/useTransformActions.ts`
+
+### Modositando Fajlok
+- `src/components/generator/CustomSlider.tsx` - Pointer capture, touch, lokalis state
+- `src/components/generator/CanvasContainer.tsx` - Context menu es HUD integralasa
+- `src/hooks/useSuperellipse.ts` - Refaktor kisebb hook-okra, auto-save
+- `src/pages/Index.tsx` - Dock es uj hook-ok integralasa
+
