@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback, forwardRef } from 'react';
 
 interface CustomSliderProps {
   label?: string;
@@ -22,43 +22,66 @@ export const CustomSlider = forwardRef<HTMLDivElement, CustomSliderProps>(({
   gradient,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [localValue, setLocalValue] = useState(value);
   const [isDragging, setIsDragging] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const safeValue = typeof value === 'number' && !isNaN(value) ? value : min;
+  // Sync external value when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalValue(value);
+    }
+  }, [value, isDragging]);
+
+  const safeValue = typeof localValue === 'number' && !isNaN(localValue) ? localValue : min;
   const percentage = ((safeValue - min) / (max - min)) * 100;
 
-  const handleDrag = (clientX: number) => {
-    if (!trackRef.current) return;
+  const computeValue = useCallback((clientX: number) => {
+    if (!trackRef.current) return safeValue;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     let newValue = min + pct * (max - min);
     newValue = Math.round(newValue / step) * step;
-    onChange(Math.max(min, Math.min(max, newValue)));
-  };
+    return Math.max(min, Math.min(max, newValue));
+  }, [min, max, step, safeValue]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const debouncedOnChange = useCallback((val: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => onChange(val), 16);
+  }, [onChange]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
     setIsDragging(true);
-    handleDrag(e.clientX);
-  };
+    const val = computeValue(e.clientX);
+    setLocalValue(val);
+    debouncedOnChange(val);
+  }, [computeValue, debouncedOnChange]);
 
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const val = computeValue(e.clientX);
+    setLocalValue(val);
+    debouncedOnChange(val);
+  }, [isDragging, computeValue, debouncedOnChange]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsDragging(false);
+    const val = computeValue(e.clientX);
+    setLocalValue(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    onChange(val);
+  }, [isDragging, computeValue, onChange]);
+
+  // Cleanup debounce on unmount
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) handleDrag(e.clientX);
-    };
-    const handleMouseUp = () => setIsDragging(false);
-
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'grabbing';
-    }
-
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [isDragging]);
+  }, []);
 
   const displayValue = step < 1 
     ? safeValue.toFixed(String(step).split('.')[1]?.length || 2)
@@ -125,8 +148,11 @@ export const CustomSlider = forwardRef<HTMLDivElement, CustomSliderProps>(({
           aria-valuenow={safeValue}
           aria-valuetext={`${displayValue}${unit}`}
           tabIndex={0}
-          className="flex-1 h-9 bg-muted rounded-[10px] relative cursor-pointer transition-colors overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          onMouseDown={handleMouseDown}
+          className="flex-1 h-9 bg-muted rounded-[10px] relative cursor-pointer transition-colors overflow-hidden focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 touch-none select-none"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onKeyDown={handleKeyDown}
         >
           {/* Gradient background if provided */}
@@ -140,14 +166,14 @@ export const CustomSlider = forwardRef<HTMLDivElement, CustomSliderProps>(({
           
           {/* Fill */}
           <div
-            className="absolute h-full bg-muted-foreground/20 rounded-l-[10px] transition-all pointer-events-none"
+            className="absolute h-full bg-muted-foreground/20 rounded-l-[10px] pointer-events-none"
             style={{ width: `${percentage}%` }}
             aria-hidden="true"
           />
 
           {/* Thumb */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-7 w-6 bg-background dark:bg-muted-foreground/30 rounded-lg shadow-md pointer-events-none transition-all"
+            className={`absolute top-1/2 -translate-y-1/2 h-7 w-6 bg-background dark:bg-muted-foreground/30 rounded-lg shadow-md pointer-events-none transition-transform ${isDragging ? 'scale-110' : ''}`}
             style={{ left: `calc(${percentage}% - 12px)` }}
             aria-hidden="true"
           />

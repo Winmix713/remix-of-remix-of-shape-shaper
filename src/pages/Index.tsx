@@ -8,6 +8,9 @@ import { CanvasContainer } from '../components/generator/CanvasContainer';
 import { DeviceFrame } from '../components/generator/DeviceFrame';
 import { InspectorOverlay } from '../components/generator/InspectorOverlay';
 import { KeyboardShortcutsModal } from '../components/generator/modals/KeyboardShortcutsModal';
+import { Dock } from '../components/generator/Dock';
+import { CanvasContextMenu } from '../components/generator/CanvasContextMenu';
+import { CanvasHUD } from '../components/generator/CanvasHUD';
 import { useSuperellipse } from '../hooks/useSuperellipse';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useCanvasNavigation } from '../hooks/useCanvasNavigation';
@@ -17,7 +20,7 @@ import { useInspector } from '../hooks/useInspector';
 import { generateTailwindSnippet } from '../utils/tailwindGenerator';
 
 const Index: React.FC = () => {
-  const { state, updateState, updateGradientStop, resetState, loadState, randomizeGlow, pathData } = useSuperellipse();
+  const { state, updateState, updateGradientStop, resetState, loadState, randomizeGlow, pathData, getGradientCSS } = useSuperellipse();
   const layerManager = useLayerManager();
   const canvasNav = useCanvasNavigation();
   const { viewMode, setViewMode, device, setDevice } = useViewMode();
@@ -177,23 +180,43 @@ const Index: React.FC = () => {
             onZoomTo100={canvasNav.zoomTo100}
             containerRef={canvasNav.containerRef}
           >
-            <DeviceFrame device={device}>
-              <div className="relative">
-                <PreviewArea 
-                  state={state} 
-                  pathData={pathData} 
-                  theme={theme} 
-                  onSpotlightTrigger={randomizeGlow}
-                />
-                <InspectorOverlay
-                  inspector={inspector}
-                  shapeWidth={state.width}
-                  shapeHeight={state.height}
-                  onHover={setHovered}
-                  onSelect={setSelected}
-                />
-              </div>
-            </DeviceFrame>
+            <CanvasContextMenu
+              pathData={pathData}
+              state={state}
+              onReset={resetState}
+              getGradientCSS={getGradientCSS}
+            >
+              <DeviceFrame device={device}>
+                <div className="relative">
+                  <PreviewArea 
+                    state={state} 
+                    pathData={pathData} 
+                    theme={theme} 
+                    onSpotlightTrigger={randomizeGlow}
+                  />
+                  <InspectorOverlay
+                    inspector={inspector}
+                    shapeWidth={state.width}
+                    shapeHeight={state.height}
+                    onHover={setHovered}
+                    onSelect={setSelected}
+                  />
+                </div>
+              </DeviceFrame>
+            </CanvasContextMenu>
+            
+            {/* Canvas HUD */}
+            <CanvasHUD
+              width={state.width}
+              height={state.height}
+              exp={state.exp}
+              zoom={canvasNav.zoom}
+            />
+
+            {/* Dock - Effect presets */}
+            {viewMode === 'canvas' && (
+              <Dock onApplyPreset={updateState} />
+            )}
           </CanvasContainer>
         )}
 
