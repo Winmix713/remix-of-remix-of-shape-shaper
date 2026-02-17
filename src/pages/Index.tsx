@@ -8,9 +8,12 @@ import { CanvasContainer } from '../components/generator/CanvasContainer';
 import { DeviceFrame } from '../components/generator/DeviceFrame';
 import { InspectorOverlay } from '../components/generator/InspectorOverlay';
 import { KeyboardShortcutsModal } from '../components/generator/modals/KeyboardShortcutsModal';
+import { CustomStyleDesignerModal } from '../components/generator/modals/CustomStyleDesignerModal';
+import { ExportCodeModal } from '../components/generator/modals/ExportCodeModal';
 import { Dock } from '../components/generator/Dock';
 import { CanvasContextMenu } from '../components/generator/CanvasContextMenu';
 import { CanvasHUD } from '../components/generator/CanvasHUD';
+import { generateSVG } from '../utils/math';
 import { useSuperellipse } from '../hooks/useSuperellipse';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useCanvasNavigation } from '../hooks/useCanvasNavigation';
@@ -27,6 +30,8 @@ const Index: React.FC = () => {
   const { inspector, toggleInspector, setHovered, setSelected, clearSelection } = useInspector();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showStyleDesigner, setShowStyleDesigner] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -242,12 +247,34 @@ const Index: React.FC = () => {
         zoom={canvasNav.zoom}
         activeLayer={layerManager.selectedLayer?.name ?? null}
         inspectorActive={inspector.active}
+        onReset={resetState}
+        onCopySVG={() => {
+          const svg = generateSVG(state, pathData);
+          navigator.clipboard.writeText(svg);
+        }}
+        onExport={() => setShowExportModal(true)}
       />
 
       {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal 
         isOpen={showShortcutsModal} 
         onClose={() => setShowShortcutsModal(false)} 
+      />
+
+      {/* Custom Style Designer Modal */}
+      <CustomStyleDesignerModal
+        isOpen={showStyleDesigner}
+        onClose={() => setShowStyleDesigner(false)}
+        state={state}
+        onApply={updateState}
+      />
+
+      {/* Export Code Modal */}
+      <ExportCodeModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        state={state}
+        pathData={pathData}
       />
     </div>
   );

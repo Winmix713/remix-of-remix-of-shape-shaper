@@ -326,16 +326,28 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
       transition: 'all 500ms cubic-bezier(0.4, 0, 0.2, 1)',
     };
 
-    // Apply filters
-    if (state.blur > 0) {
-      baseStyle.filter = `blur(${state.blur}px)`;
+    // Build CSS filter string from all filter properties
+    const filters: string[] = [];
+    if (state.blur > 0) filters.push(`blur(${state.blur}px)`);
+    if (state.brightness !== 100) filters.push(`brightness(${state.brightness / 100})`);
+    if (state.contrast !== 100) filters.push(`contrast(${state.contrast / 100})`);
+    if (state.saturate !== 100) filters.push(`saturate(${state.saturate / 100})`);
+    if (state.hueRotate !== 0) filters.push(`hue-rotate(${state.hueRotate}deg)`);
+    if (filters.length > 0) {
+      baseStyle.filter = filters.join(' ');
     }
 
-    // Backdrop blur
-    if (state.backdropBlur > 0) {
-      const blurValue = `blur(${state.backdropBlur}px)`;
+    // Backdrop blur (combines frost blur + backdrop blur)
+    const totalBackdropBlur = state.backdropBlur + (state.frostBlur || 0);
+    if (totalBackdropBlur > 0) {
+      const blurValue = `blur(${totalBackdropBlur}px)`;
       baseStyle.backdropFilter = blurValue;
       baseStyle.WebkitBackdropFilter = blurValue;
+    }
+
+    // Inner shadow via box-shadow inset
+    if (state.innerShadowBlur > 0 || state.innerShadowSpread !== 0) {
+      baseStyle.boxShadow = `inset 0 0 ${state.innerShadowBlur}px ${state.innerShadowSpread}px ${state.innerShadowColor}`;
     }
 
     // Border configuration
@@ -345,7 +357,7 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
       baseStyle.borderStyle = state.strokeStyle;
       baseStyle.borderColor = state.strokeColor;
       baseStyle.outline = 'none';
-      baseStyle.boxShadow = 'none';
+      if (!baseStyle.boxShadow) baseStyle.boxShadow = 'none';
     } else {
       // Default minimal border for structure
       baseStyle.borderWidth = '4px';
@@ -393,7 +405,15 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
     state.borderEnabled,
     state.strokeWidth,
     state.strokeStyle,
-    state.strokeColor
+    state.strokeColor,
+    state.brightness,
+    state.contrast,
+    state.saturate,
+    state.hueRotate,
+    state.frostBlur,
+    state.innerShadowBlur,
+    state.innerShadowSpread,
+    state.innerShadowColor,
   ]);
 
   /**
@@ -498,6 +518,18 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
               />
             ))}
           </div>
+        )}
+
+        {/* Glass Tint Overlay */}
+        {state.tintOpacity > 0 && (
+          <div
+            className="absolute inset-0 w-full h-full pointer-events-none z-[4]"
+            style={{
+              backgroundColor: state.tintColor,
+              opacity: state.tintOpacity / 100,
+            }}
+            aria-hidden="true"
+          />
         )}
 
         {/* Noise Overlay */}

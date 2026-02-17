@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react';
-import { Plus, Layers, Square, Image, Type, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Layers, Square, Image, Type, ChevronDown, ChevronUp, Star, Clock, Search, BookOpen } from 'lucide-react';
 import { Layer, LayerType, BlendMode, Transform } from '@/types/layers';
 import { LayerItem } from './LayerItem';
 import { BlendModeSelector } from './BlendModeSelector';
@@ -90,7 +90,8 @@ export const LayerPanel = memo<LayerPanelProps>(({
     onUpdateLayer(layerId, { name: newName });
   }, [onUpdateLayer]);
 
-  const [activeTab, setActiveTab] = useState<'layers' | 'assets' | 'pages'>('layers');
+  const [activeTab, setActiveTab] = useState<'layers' | 'assets' | 'library'>('layers');
+  const [librarySearch, setLibrarySearch] = useState('');
 
   return (
     <aside 
@@ -100,7 +101,7 @@ export const LayerPanel = memo<LayerPanelProps>(({
     >
       {/* Sidebar Tabs */}
       <div className="flex items-center border-b border-border shrink-0">
-        {(['layers', 'assets', 'pages'] as const).map((tab) => (
+        {(['layers', 'assets', 'library'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -116,12 +117,80 @@ export const LayerPanel = memo<LayerPanelProps>(({
         ))}
       </div>
 
-      {/* Pages placeholder */}
-      {activeTab === 'pages' && (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <Layers className="w-8 h-8 text-muted-foreground/30 mb-2" />
-          <p className="text-xs text-muted-foreground">Pages</p>
-          <p className="text-[10px] text-muted-foreground/70 mt-1">Multi-page support coming soon</p>
+      {/* Library Tab */}
+      {activeTab === 'library' && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Search */}
+          <div className="px-3 py-2 border-b border-border">
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted rounded-lg">
+              <Search className="w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={librarySearch}
+                onChange={(e) => setLibrarySearch(e.target.value)}
+                placeholder="Search presets..."
+                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-thin scrollbar-thumb-muted">
+            {/* Favorites */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-3.5 h-3.5 text-yellow-500" />
+                <span className="text-xs font-semibold text-foreground">Favorites</span>
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">0</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 pl-5.5">No favorites yet</p>
+            </div>
+
+            {/* Recent */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-semibold text-foreground">Recent</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70 pl-5.5">No recent items</p>
+            </div>
+
+            {/* Shape Presets */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-semibold text-foreground">Shapes</span>
+              </div>
+              <div className="space-y-1">
+                {[
+                  { name: 'Squircle iOS', n: '4.0', icon: '📱' },
+                  { name: 'Hyperellipse', n: '2.8', icon: '⬮' },
+                  { name: 'Soft Circle', n: '2.0', icon: '⚪' },
+                  { name: 'Rounded Rect', n: '6.0', icon: '▢' },
+                  { name: 'Diamond', n: '1.0', icon: '◇' },
+                  { name: 'Pill', n: '10.0', icon: '💊' },
+                  { name: 'Blob', n: '1.5', icon: '🫧' },
+                ].filter(s => !librarySearch || s.name.toLowerCase().includes(librarySearch.toLowerCase()))
+                .map((shape) => (
+                  <button
+                    key={shape.name}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left hover:bg-muted transition-colors group"
+                  >
+                    <span className="text-sm">{shape.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">{shape.name}</p>
+                      <p className="text-[10px] text-muted-foreground">n={shape.n}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* New Preset */}
+            <button className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+              New Preset
+            </button>
+          </div>
         </div>
       )}
 

@@ -162,6 +162,38 @@ export interface SuperellipseState {
   shadowDistance: number;
   /** Shadow intensity/opacity (0-100) */
   shadowIntensity: number;
+  
+  // CSS Filters
+  /** Brightness filter (0-200) */
+  brightness: number;
+  /** Contrast filter (0-200) */
+  contrast: number;
+  /** Saturate filter (0-200) */
+  saturate: number;
+  /** Hue rotate filter (0-360) */
+  hueRotate: number;
+  
+  // Glass Surface
+  /** Frost blur radius (0-30) */
+  frostBlur: number;
+  /** Tint color hex */
+  tintColor: string;
+  /** Tint opacity (0-100) */
+  tintOpacity: number;
+  
+  // Inner Shadow
+  /** Inner shadow spread (-20 to 20) */
+  innerShadowSpread: number;
+  /** Inner shadow blur (0-50) */
+  innerShadowBlur: number;
+  /** Inner shadow color hex */
+  innerShadowColor: string;
+  
+  // Noise Distortion
+  /** Noise frequency (1-100) */
+  noiseFrequency: number;
+  /** Distortion strength (0-100) */
+  distortionStrength: number;
 }
 
 /**
@@ -286,6 +318,26 @@ const DEFAULT_STATE: SuperellipseState = {
   // Shadow
   shadowDistance: 10,
   shadowIntensity: 30,
+  
+  // CSS Filters
+  brightness: 100,
+  contrast: 100,
+  saturate: 100,
+  hueRotate: 0,
+  
+  // Glass Surface
+  frostBlur: 0,
+  tintColor: '#ffffff',
+  tintOpacity: 0,
+  
+  // Inner Shadow
+  innerShadowSpread: 0,
+  innerShadowBlur: 0,
+  innerShadowColor: '#000000',
+  
+  // Noise Distortion
+  noiseFrequency: 25,
+  distortionStrength: 0,
 };
 
 // ============================================================================
@@ -523,6 +575,36 @@ export function useSuperellipse(): UseSuperellipseReturn {
       }
       if (updates.hue !== undefined) {
         newState.hue = updates.hue % 360;
+      }
+      if (updates.brightness !== undefined) {
+        newState.brightness = clamp(updates.brightness, 0, 200);
+      }
+      if (updates.contrast !== undefined) {
+        newState.contrast = clamp(updates.contrast, 0, 200);
+      }
+      if (updates.saturate !== undefined) {
+        newState.saturate = clamp(updates.saturate, 0, 200);
+      }
+      if (updates.hueRotate !== undefined) {
+        newState.hueRotate = updates.hueRotate % 360;
+      }
+      if (updates.frostBlur !== undefined) {
+        newState.frostBlur = clamp(updates.frostBlur, 0, 30);
+      }
+      if (updates.tintOpacity !== undefined) {
+        newState.tintOpacity = clamp(updates.tintOpacity, 0, 100);
+      }
+      if (updates.innerShadowSpread !== undefined) {
+        newState.innerShadowSpread = clamp(updates.innerShadowSpread, -20, 20);
+      }
+      if (updates.innerShadowBlur !== undefined) {
+        newState.innerShadowBlur = clamp(updates.innerShadowBlur, 0, 50);
+      }
+      if (updates.noiseFrequency !== undefined) {
+        newState.noiseFrequency = clamp(updates.noiseFrequency, 1, 100);
+      }
+      if (updates.distortionStrength !== undefined) {
+        newState.distortionStrength = clamp(updates.distortionStrength, 0, 100);
       }
       
       return newState;
