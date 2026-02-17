@@ -1,164 +1,245 @@
 
 
-# Javasolt Fejlesztesek - Osszesitett Prioritasos Lista
+# Fejlesztesi Koncepcio Terv - 7 Referenciakep Alapjan
 
 ## Attekintes
 
-A harom fejlesztesi javaslat (v7 integracio, Nexus Editor, Comprehensive Visual Editor) osszesen ~80+ kulonbozo feature-t tartalmazott. Az alabbiakban ezeket **mar megvalosult**, **javasolt**, es **nem javasolt** kategoriakba soroltam a jelenlegi kodbazis alapjan.
+A 7 kep harom kulonbozo professzionalis design tool megoldasat mutatja be. Az alabbiakban osszesitem, mit latunk rajtuk, es hogyan alkalmazhatjuk a jelenlegi Superellipse Generator Pro rendszerunkben.
 
 ---
 
-## Mar Megvalosult Fejlesztesek (NEM kell implementalni)
+## Kepek Elemzese
 
-Ezek a funkciok mar mukodnek a rendszerben:
+### Kep 1 (image-2): Framer-stilusu Design Editor
+- Layers panel balra (Desktop > Navigation > Hero Image > Hero Title > Subtitle > CTA Button) fastrukturaban
+- Canvas kozepen: lila hatteru kartya komponens szelekcios handleekkel (kek sarokpontok)
+- Properties panel jobbra: X/Y pozicio, W/H meretezis, Rotation, Typography (font, suly, meret, sorkozt), Pixelation/Brightness/Quantization sliderek, Fill szin + opacity, Optimizer szekcion
+- Preview/Code kapcsolo a jobb felso sarokban
 
-- Harom oszlopos layout (LayerPanel | Canvas | ControlPanel)
-- Layer rendszer: drag-and-drop, visibility, lock, solo, blend mode, opacity, context menu
-- Canvas zoom/pan (25%-500%) billentyuparancsokkal
-- View Mode Switcher (Canvas/Code/Preview) a Header-ben
-- Device Selector (Mobile/Tablet/Desktop) DeviceFrame-mel
-- Inspector Mode (hover/select overlay)
-- StatusBar (dimenziok, zoom, aktiv reteg)
-- Keyboard Shortcuts rendszer + modal (Ctrl+/)
-- Asymmetrikus sarok szerkesztes (CornerControls)
-- Gradient Editor (linear, radial, conic) draggable stop-okkal
-- Effects Stack (Blur, Drop Shadow, Inner Shadow, Inner Glow, Noise)
-- Quick Presets Grid (iOS, Pill, Squircle, stb.)
-- Preset save/load/delete JSON export/import-tal
-- Export Modal (SVG, CSS, React, Vue kod)
-- Glow animaciok (Pulse, Rotate, Wave) CSS exporttal
-- Scene Settings (Global Scale, Gradient Mask, Noise)
-- CSS/SCSS/Tailwind kimenet a CssTab-ban
-- Tema valtas (dark/light)
+### Kep 2 (image-3): Superellipse Generator Pro v7 - FX Tab
+- macOS menusor tetejin (File, Edit, View, Object, Text)
+- Layers panel balra: Glow Layers, Superellipse, Effects, Text Label
+- Canvas kozepen: lila superellipse sotetkek hattteren, also HUD-dal (SIZE 200x200, POS 0,0, ROT 0deg)
+- Jobbra: DESIGN | GLOW | **FX** | TEXT tabokkal
+- FX tab tartalma: **Quick Filters** (Vintage, Hi-Con, Dreamy, Noir, Warm, Cool, Fade, Reset grid), **Filters & Blur** (Blur, Backdrop Blur, Brightness, Contrast, Saturate, Hue Rotate sliderek)
 
----
+### Kep 3 (image-4): Superellipse Generator Pro v7 - Design Tab
+- macOS menusor, traffic light gombok
+- Bal sidebar: Library (Favorites 12, Recent), Shapes presetek (Squircle iOS n=4.0, Hyperellipse n=2.8, Soft Circle n=2.0, Rounded Rect n=6.0, Diamond n=1.0, New Preset)
+- Canvas: rozsaszin superellipse, felso HUD (WIDTH 512px, HEIGHT 512px, CURVE 6.62)
+- Jobb panel DESIGN tab: Shape (Exponent slider), Width/Height sliderek, Rotation, Corner Smoothing, Fill szinpaletta, OKLCH Color (Lightness, Chroma, Hue sliderek ertekekkel)
+- Also Dock: 5 gomb ikonokkal
+- Also statusbar: Reset, Copy SVG, Export gombok
 
-## Javasolt Fejlesztesek (IMPLEMENT)
+### Kep 4 (image-5): Aether CSS - Liquid Glass Generator
+- Harom effekt mod: Liquid Glass (new), Glassmorphism, Neumorphism
+- Preset grid: Liquid Crystal, Fluid Amber, Ice Ripple, Mercury Drop, Ocean Wave, Crystal Mist, Molten Glass, Silk Veil, Plasma Flow, Frost Lens, Aurora Gel, Nebula Prism
+- Live Preview: kartya komponens (Jane Doe, Styled Component, Get Started gomb)
+- Preview/Code toggle
 
-Az alabbi 6 feature hozza a legtobb ertekethat a legkevesebb komplexitassal:
+### Kep 5 (image-6): Custom Style Designer Modal
+- Templates | Custom Code | My Presets tabfuul
+- 6 template: Glassmorphism, Inner Glow, Retro 80s, Rainbow Gradient, Spinning Animation, Morphing Shape
+- Live Preview: lila superellipse
+- Preset nev input + "Save as Preset" + "Apply to Canvas" gombok
 
-### 1. iOS-stilusu CustomSlider Frissites
-**Prioritas: MAGAS | Komplexitas: Kozepes | ~3 ora**
+### Kep 6 (image-7): Advanced Controls Panel
+- Noise Distortion szekcion: Noise Frequency (25), Distortion Strength (65)
+- Glass Surface szekcion: Frost Blur (6), Tint Color Grayscale (255 + #ffffff), Tint Opacity (0)
+- Inner Shadow szekcion: Shadow Spread (-2), Shadow Blur (12), Shadow Color Grayscale (255 + #ffffff)
 
-A jelenlegi `CustomSlider.tsx` mar letezik es jo alapokat ad, de a v7 teljesitmeny-optimalizacioi hianyoznak belole:
-- **Pointer capture** hasznalata a megbizhato drag-ert (jelenleg mousemove/mouseup)
-- **Lokalis state drag kozben**: Csak pointerUp-ra kuldi a vegleges erteket a szulonek
-- **Touch support**: pointerdown/pointermove/pointerup a touch eszkozokhoz
-- **Gradient track hatter**: Mar tamogatott (`gradient` prop), de nem hasznalt minden relevan helyen
-
-**Fajlok:** `src/components/generator/CustomSlider.tsx` modositasa
-
-### 2. Dock - Effekt Gyorsmenu
-**Prioritas: MAGAS | Komplexitas: Kozepes | ~3-4 ora**
-
-A canvas alja kozepen egy floating pill formaju gyorsmenu 4 eloredefinalt effekt preset-tel. Ez az egyik leglatvanasabb UX javitas:
-- **Glow**: Glow bekapcsolas + OKLCH szin + gradiens
-- **Glass**: Atlatszo hatter + backdrop blur + stroke
-- **Neo**: Neumorphism + iranyitott arnyek
-- **Clay**: Clay stilus + inset arnyek
-
-Minden gomb animalt hover effekttel (translateY, scale). Egy kattintassal alkalmazhatoak.
-
-**Uj fajl:** `src/components/generator/Dock.tsx`
-
-### 3. Canvas Context Menu
-**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2-3 ora**
-
-Jobb-klikk kontextus menu a canvas-on a leggyakoribb muveletekhez:
-- Copy SVG / Copy CSS
-- Export SVG / Export PNG
-- Duplicate Shape
-- Flip Horizontal / Vertical
-- Reset Position / Reset All
-
-A Radix UI `ContextMenu` primitiv mar elerheto a shadcn/ui-ban.
-
-**Uj fajl:** `src/components/generator/CanvasContextMenu.tsx`
-
-### 4. Canvas HUD - Vaszon Info Overlay
-**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2 ora**
-
-Az alakzat mereteit es poziciojat kozvetlenul a vasznon megjelenitio glass-style info karta:
-- Meret: `320 x 400`
-- Pozicio: `x: 0, y: 0`
-- Forgatas szog
-- Flip jelzok
-
-A canvas also kozepere kerul, atlatszo/blur hatterrel.
-
-**Uj fajl:** `src/components/generator/CanvasHUD.tsx`
-
-### 5. Hook Architektura Refaktor
-**Prioritas: KOZEPES | Komplexitas: Magas | ~5-7 ora**
-
-A `useSuperellipse.ts` (724 sor) felbontasa kisebb, specializalt hook-okra:
-- `useShapeState.ts` - Alakzat parameter kezeles (width, height, exp, corners)
-- `useHistoryState.ts` - Undo/Redo + auto-save (1s debounce, localStorage)
-- `useExportActions.ts` - SVG/PNG/CSS export logika
-- `useTransformActions.ts` - Flip, rotate, nudge
-
-A fo `useSuperellipse` hook orchestratorkent mukodik tovabbra is. Ez javitja a tesztelheto seget, karbantarthatosagot, es a jovobeni bovites lehetosegeit.
-
-### 6. Auto-Save es Undo/Redo Javitas
-**Prioritas: KOZEPES | Komplexitas: Alacsony | ~2-3 ora**
-
-- 1 masodperces debounce-szal localStorage-ba auto-mentes
-- Undo/Redo: 500ms debounce, max 50 bejegyzes, duplikatum szures
-- Ctrl+S shortcut kezi menteshez toast visszajelzessel
-- Allapot visszaallitas oldal ujratolteskor
-
-**Fajlok:** `src/hooks/useSuperellipse.ts` (vagy az uj `useHistoryState.ts`)
+### Kep 7 (image-8): Jelenlegi rendszerunk - Glow Tab
+- Ez a sajat alkalmazasunk jelenlegi allpota a Glow tabbal: Base Color OKLCH, Shape Configuration, Glow Scale, Dock (Glow, Glass, Neo, Clay)
+- Canvas: narancssarga glow-s kartya komponens
+- Layers panel balra Properties szekcional
 
 ---
 
-## NEM Javasolt Fejlesztesek (SKIP)
+## Javasolt Fejlesztesek - 5 Fejlesztesi Csomag
 
-### macOS MenuBar es TitleBar
-**Ok:** A jelenlegi Header mar tartalmazza a szukseges funkcionalitast (View Mode, Device Selector, Inspector, Export). Egy macOS menusor es kulon TitleBar felesleges komplexitast adna, kevesebb gyakorlati ertek mellett. A Header ket reszre bontasa vizualisan szebb lenne, de a meglevo egysoros megoldas funkcionalis es tiszta.
+### 1. Quick Filters / FX Tab Bovites
+**Referencia:** Kep 2 (v7 FX tab), Kep 7 (Noise controls)
 
-### Selection Handles (Resize/Rotate a canvason)
-**Ok:** Magas komplexitas (~6-8 ora), es a jelenlegi slider-alapu meretvaltozatas mar jol mukodik a ControlPanel-ben. A canvas-on torteno resize drag megvalositasa sok edge case-t hoz (aspect ratio lock, snap, multi-layer), es a ROI alacsony.
+A jelenlegi EffectsTab-ot bovitjuk egy **Quick Filters** grid-del es CSS filter sliderek-kel:
 
-### Snap-to-Grid es Ruler Guides
-**Ok:** A Superellipse Generator elsodlegesen egyetlen alakzat finomhangolasara szolgal, nem egy altalanos design tool. A grid/ruler funkciok multi-shape canvas-nel lennenek igazan hasznosak - ami egy jovobeli fazisban jonnte szoba.
+**Quick Filters Grid (2x4):**
+- Vintage: sepia brightness contrast beallitas
+- Hi-Contrast: magas kontraszt, elesites
+- Dreamy: blur + vilagositas + telitettseg csokkentes
+- Noir: grayscale + magas kontraszt
+- Warm: hue-rotate melegebb arnyalat fele
+- Cool: hue-rotate hidegebb arnyalat fele
+- Fade: csokkenotett telitettseg + vilagositas
+- Reset: minden filter alapertelemezetre
 
-### Properties Section (Position/Size/Layout/Flexbox)
-**Ok:** Ezek a webes layout tulajdonsagok (position, flexbox direction, gap) nem relevansak egy SVG shape generatornal. A jelenlegi ControlPanel tabjai (Shape, Color, Glow, Effects) pont a megfelelo absztrakciot nyujtjak.
+**Uj CSS Filter sliderek:**
+- Brightness (0-200%)
+- Contrast (0-200%)
+- Saturate (0-200%)
+- Hue Rotate (0-360deg)
 
-### ZIP Export
-**Ok:** Kicsi hasznossag - a felhasznalok jellemzoen egyetlen SVG-t vagy CSS kodotreszletet masolnak, nem teljes projekteket toltenek le. A jelenlegi export modal (SVG, CSS, React, Vue) lefedte a fo use case-eket.
+**Noise Distortion bovites:**
+- Noise Frequency slider (1-100)
+- Distortion Strength slider (0-100)
 
-### Onboarding Overlay
-**Ok:** A rendszer mar intuitive hasznaelhato, es a Keyboard Shortcuts Modal (Ctrl+/) eleg tajekoztatas. Egy first-run overlay inkabb irritalo lenne, mint hasznos.
+**Glass Surface uj szekcion:**
+- Frost Blur (0-30px)
+- Tint Color (szinvalaszto + opacity)
+
+**Inner Shadow uj szekcion:**
+- Shadow Spread (-20 to 20)
+- Shadow Blur (0-50px)
+- Shadow Color (szinvalaszto)
+
+**Fajlok:**
+- `src/components/generator/tabs/EffectsTab.tsx` - Teljes ujrastruktalas
+- `src/hooks/useSuperellipse.ts` - Uj state mezo k: brightness, contrast, saturate, hueRotate, frostBlur, tintColor, tintOpacity, innerShadowSpread, innerShadowBlur, innerShadowColor, noiseFrequency, distortionStrength
 
 ---
 
-## Implementacios Sorrend
+### 2. Custom Style Designer Modal
+**Referencia:** Kep 5 (Aether presets), Kep 6 (Custom Style Designer)
 
-| # | Feature | Komplexitas | Becsult ido |
-|---|---------|-------------|-------------|
-| 1 | CustomSlider pointer capture + touch | Kozepes | 3 ora |
-| 2 | Dock effekt gyorsmenu | Kozepes | 3-4 ora |
-| 3 | Canvas Context Menu | Alacsony | 2-3 ora |
-| 4 | Canvas HUD | Alacsony | 2 ora |
-| 5 | Hook architektura refaktor | Magas | 5-7 ora |
-| 6 | Auto-save + Undo/Redo javitas | Alacsony | 2-3 ora |
-| **Osszesen** | | | **~17-22 ora** |
+Uj modal ablak, ami style template-eket, egyedi CSS kodot, es mentes/betoltes funkciokat tartalmaz:
+
+**Harom tab:**
+1. **Templates**: 6 eloredefinalt stilus keszlet kartyakon (Glassmorphism, Inner Glow, Retro 80s, Rainbow Gradient, Spinning Animation, Morphing Shape) — mindegyik ikonnal, nevvel, rovid lerassal
+2. **Custom Code**: CSS textarea, ahol a felhasznalo sajat CSS-t irhat
+3. **My Presets**: A felhasznalo altal mentett egyedi presetek listaja
+
+**Funkciok:**
+- Bal oldalon template kartyak / editor
+- Jobb oldalon Live Preview (kicsi superellipse megjelenites a jelenlegi state alapjan)
+- "Preset name..." input mezo
+- "Save as Preset" gomb (localStorage-ba mentes)
+- "Apply to Canvas" gomb (a kivalasztott template alkalmazasa)
+
+**Uj fajlok:**
+- `src/components/generator/modals/CustomStyleDesignerModal.tsx`
+- `src/types/styleTemplates.ts` — StyleTemplate tipusok es preset adatok
+
+**Modositando fajlok:**
+- `src/components/generator/ControlPanel.tsx` — Uj gomb az FX tabban a modal megnyitasahoz
+- `src/pages/Index.tsx` — Modal allapot es megjelenites
+
+---
+
+### 3. Preset Sidebar Fejlesztes (Library System)
+**Referencia:** Kep 3 (v7 bal sidebar), Kep 5 (Aether presets)
+
+A jelenlegi LayerPanel sidebar-t bovitjuk egy professzionalis preset konyvtar rendszerrel:
+
+**Library szekcion (az "assets" tab helyere vagy mellette):**
+- **Favorites**: Kedvenc presetek listaja badge-dzsel (pl. "12")
+- **Recent**: Legutobb hasznalt presetek
+- **Shapes**: Eloredefinalt alakzat presetek ikonokkal es n ertek kijelzessel:
+  - Squircle iOS (n=4.0)
+  - Hyperellipse (n=2.8)
+  - Soft Circle (n=2.0)
+  - Rounded Rect (n=6.0)
+  - Diamond (n=1.0)
+  - Pill (magas exp + keskeny)
+  - Blob (alacsony exp + aszimmetrikus)
+- **New Preset** gomb uj menteshez
+- Kereses input mezo a presetek szuresere
+
+**Fajlok:**
+- `src/components/generator/layers/LayerPanel.tsx` — A "pages" tab lecserelese "Library" tabra
+- `src/hooks/usePresets.ts` — Bovites favorites/recent kezelsessel
+
+---
+
+### 4. Footer Toolbar (Reset, Copy SVG, Export)
+**Referencia:** Kep 3 (v7 also statusbar), Kep 4 (Aether control panel)
+
+A jelenlegi StatusBar-t bovitjuk gyors akciogombokkal:
+
+**Bal oldalon (jelenlegi info megmarad):**
+- Ready jelzo (zold pont)
+- Meretek (320 x 400)
+
+**Jobb oldalon uj gombok:**
+- **Reset** gomb (RotateCcw ikon) — allapot visszaallitas
+- **Copy SVG** gomb (Copy ikon) — SVG kod vagolap
+- **Export** gomb (Download ikon, piros/primary szin) — ExportCodeModal megnyitas
+
+**Fajlok:**
+- `src/components/layout/StatusBar.tsx` — Uj akciogombok
+- `src/pages/Index.tsx` — Callback propok (resetState, pathData, state) tovabbitasa StatusBar-nak
+
+---
+
+### 5. Canvas Felso HUD Bovites
+**Referencia:** Kep 3 (v7 felso HUD: WIDTH, HEIGHT, CURVE ertekkel)
+
+A jelenlegi also CanvasHUD mellette egy felso info savot is adunk:
+
+**Felso HUD tartalom:**
+- WIDTH: `512px` (szinezett ertek, pl. pink/primary)
+- HEIGHT: `512px`
+- CURVE: `6.62` (az aktualis exp ertek)
+
+Ez a canvas felso kozeperere kerul, a jelenlegi also HUD stilusaban (glass card).
+
+**Fajlok:**
+- `src/components/generator/CanvasHUD.tsx` — Bovites felso info savval, vagy kulon `CanvasTopHUD` komponens
+- `src/pages/Index.tsx` — Uj HUD integracio
+
+---
 
 ## Technikai Reszletek
 
+### Uj SuperellipseState Mezok
+
+```text
+// CSS Filters
+brightness: number;       // 100 (0-200)
+contrast: number;          // 100 (0-200)
+saturate: number;          // 100 (0-200)
+hueRotate: number;         // 0 (0-360)
+
+// Glass Surface
+frostBlur: number;         // 0 (0-30)
+tintColor: string;         // '#ffffff'
+tintOpacity: number;       // 0 (0-100)
+
+// Inner Shadow
+innerShadowSpread: number; // 0 (-20 to 20)
+innerShadowBlur: number;   // 0 (0-50)
+innerShadowColor: string;  // '#000000'
+
+// Noise Distortion
+noiseFrequency: number;    // 25 (1-100)
+distortionStrength: number; // 0 (0-100)
+```
+
 ### Uj Fajlok
-- `src/components/generator/Dock.tsx`
-- `src/components/generator/CanvasContextMenu.tsx`
-- `src/components/generator/CanvasHUD.tsx`
-- `src/hooks/useShapeState.ts`
-- `src/hooks/useHistoryState.ts`
-- `src/hooks/useExportActions.ts`
-- `src/hooks/useTransformActions.ts`
+
+| Fajl | Cel |
+|------|-----|
+| `src/components/generator/modals/CustomStyleDesignerModal.tsx` | Stilus sablon valaszto modal |
+| `src/types/styleTemplates.ts` | Template tipusok es eloredefinalt stilusok |
 
 ### Modositando Fajlok
-- `src/components/generator/CustomSlider.tsx` - Pointer capture, touch, lokalis state
-- `src/components/generator/CanvasContainer.tsx` - Context menu es HUD integralasa
-- `src/hooks/useSuperellipse.ts` - Refaktor kisebb hook-okra, auto-save
-- `src/pages/Index.tsx` - Dock es uj hook-ok integralasa
+
+| Fajl | Valtozas |
+|------|----------|
+| `src/components/generator/tabs/EffectsTab.tsx` | Quick Filters grid, CSS filter sliderek, Glass Surface, Inner Shadow szekciok |
+| `src/hooks/useSuperellipse.ts` | Uj state mezok (brightness, contrast, stb.) es alapertelmezes |
+| `src/components/generator/PreviewArea.tsx` | CSS filter alkalmazasa, inner shadow, glass surface rendereles |
+| `src/components/generator/layers/LayerPanel.tsx` | Library tab a preset rendszerrel |
+| `src/components/layout/StatusBar.tsx` | Reset, Copy SVG, Export akciogombok |
+| `src/components/generator/CanvasHUD.tsx` | Felso info sav (WIDTH, HEIGHT, CURVE) |
+| `src/components/generator/ControlPanel.tsx` | Custom Style Designer gomb |
+| `src/pages/Index.tsx` | Uj modal allapot, StatusBar propok, felso HUD |
+
+### Implementacios Sorrend
+
+1. SuperellipseState bovites uj mezokkel + alapertelmezeisekkel
+2. EffectsTab ujrastruktalas (Quick Filters + CSS filter sliderek + Glass + Inner Shadow)
+3. PreviewArea bovites (CSS filterek + inner shadow + glass surface rendereles)
+4. Custom Style Designer Modal
+5. Canvas Felso HUD
+6. StatusBar akciogombok
+7. Library tab a LayerPanel-ben
 
