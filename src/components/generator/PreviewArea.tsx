@@ -333,6 +333,7 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
     if (state.contrast !== 100) filters.push(`contrast(${state.contrast / 100})`);
     if (state.saturate !== 100) filters.push(`saturate(${state.saturate / 100})`);
     if (state.hueRotate !== 0) filters.push(`hue-rotate(${state.hueRotate}deg)`);
+    if (state.distortionStrength > 0) filters.push(`url(#noise-distortion-filter)`);
     if (filters.length > 0) {
       baseStyle.filter = filters.join(' ');
     }
@@ -484,6 +485,32 @@ const PreviewAreaInner: FC<PreviewAreaProps> = ({
     >
       {/* Grid Background */}
       <GridBackground />
+
+      {/* SVG Noise Distortion Filter Definition */}
+      {state.distortionStrength > 0 && (
+        <svg
+          style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+          aria-hidden="true"
+        >
+          <defs>
+            <filter id="noise-distortion-filter">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency={state.noiseFrequency / 1000}
+                numOctaves={3}
+                result="noise"
+              />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale={state.distortionStrength}
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+      )}
 
       {/* Phone Frame Container */}
       <div 
