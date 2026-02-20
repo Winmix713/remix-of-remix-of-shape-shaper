@@ -1,6 +1,7 @@
 import { memo, useState, useCallback } from 'react';
 import { Plus, Layers, Square, Image, Type, ChevronDown, ChevronUp, Star, Clock, Search, BookOpen } from 'lucide-react';
 import { Layer, LayerType, BlendMode, Transform } from '@/types/layers';
+import { SuperellipseState } from '@/hooks/useSuperellipse';
 import { LayerItem } from './LayerItem';
 import { BlendModeSelector } from './BlendModeSelector';
 import { TransformControls } from './TransformControls';
@@ -36,12 +37,23 @@ interface LayerPanelProps {
   onSetBlendMode: (layerId: string, blendMode: BlendMode) => void;
   onSetOpacity: (layerId: string, opacity: number) => void;
   onUpdateTransform: (layerId: string, transform: Partial<Transform>) => void;
+  onApplyShapePreset?: (updates: Partial<SuperellipseState>) => void;
 }
 
 const ADD_LAYER_OPTIONS: { type: LayerType; label: string; icon: React.ElementType }[] = [
   { type: 'shape', label: 'Shape Layer', icon: Square },
   { type: 'image', label: 'Image Layer', icon: Image },
   { type: 'text', label: 'Text Layer', icon: Type },
+];
+
+const SHAPE_PRESETS: { name: string; n: string; icon: string; updates: Partial<SuperellipseState> }[] = [
+  { name: 'Squircle iOS', n: '4.0', icon: '📱', updates: { exp: 4.0, width: 320, height: 320 } },
+  { name: 'Hyperellipse', n: '2.8', icon: '⬮', updates: { exp: 2.8, width: 300, height: 300 } },
+  { name: 'Soft Circle', n: '2.0', icon: '⚪', updates: { exp: 2.0, width: 280, height: 280 } },
+  { name: 'Rounded Rect', n: '6.0', icon: '▢', updates: { exp: 6.0, width: 400, height: 300 } },
+  { name: 'Diamond', n: '1.0', icon: '◇', updates: { exp: 1.0, width: 300, height: 300 } },
+  { name: 'Pill', n: '10.0', icon: '💊', updates: { exp: 10.0, width: 400, height: 180 } },
+  { name: 'Blob', n: '1.5', icon: '🫧', updates: { exp: 1.5, width: 320, height: 360 } },
 ];
 
 export const LayerPanel = memo<LayerPanelProps>(({
@@ -62,6 +74,7 @@ export const LayerPanel = memo<LayerPanelProps>(({
   onSetBlendMode,
   onSetOpacity,
   onUpdateTransform,
+  onApplyShapePreset,
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [propertiesOpen, setPropertiesOpen] = useState(true);
@@ -161,25 +174,21 @@ export const LayerPanel = memo<LayerPanelProps>(({
                 <span className="text-xs font-semibold text-foreground">Shapes</span>
               </div>
               <div className="space-y-1">
-                {[
-                  { name: 'Squircle iOS', n: '4.0', icon: '📱' },
-                  { name: 'Hyperellipse', n: '2.8', icon: '⬮' },
-                  { name: 'Soft Circle', n: '2.0', icon: '⚪' },
-                  { name: 'Rounded Rect', n: '6.0', icon: '▢' },
-                  { name: 'Diamond', n: '1.0', icon: '◇' },
-                  { name: 'Pill', n: '10.0', icon: '💊' },
-                  { name: 'Blob', n: '1.5', icon: '🫧' },
-                ].filter(s => !librarySearch || s.name.toLowerCase().includes(librarySearch.toLowerCase()))
+                {SHAPE_PRESETS
+                .filter(s => !librarySearch || s.name.toLowerCase().includes(librarySearch.toLowerCase()))
                 .map((shape) => (
                   <button
                     key={shape.name}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left hover:bg-muted transition-colors group"
+                    onClick={() => onApplyShapePreset?.(shape.updates)}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left hover:bg-muted transition-colors group active:scale-[0.98]"
+                    title={`Apply ${shape.name} preset (n=${shape.n})`}
                   >
                     <span className="text-sm">{shape.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{shape.name}</p>
                       <p className="text-[10px] text-muted-foreground">n={shape.n}</p>
                     </div>
+                    <span className="text-[9px] text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity">Apply</span>
                   </button>
                 ))}
               </div>

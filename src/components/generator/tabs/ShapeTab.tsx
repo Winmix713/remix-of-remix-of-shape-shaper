@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Lock, Unlock, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { Lock, Unlock, Info } from "lucide-react";
 import {
   SuperellipseState,
   CornerExponents,
 } from "../../../hooks/useSuperellipse";
 import { CornerControls } from "../CornerControls";
+import { CustomSlider } from "../CustomSlider";
+import { CollapsibleSection } from "../CollapsibleSection";
 import {
   getSuperellipsePath,
   getPerCornerSuperellipsePath,
@@ -67,148 +69,6 @@ const getExponentDescription = (exp: number): string => {
 // ============================================================================
 // COMPONENTS
 // ============================================================================
-
-interface CollapsibleSectionProps {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
-  title,
-  defaultOpen = true,
-  children,
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const sectionId = React.useId();
-
-  return (
-    <div className="space-y-3">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-colors px-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
-        aria-expanded={isOpen}
-        aria-controls={sectionId}
-        aria-label={`${isOpen ? "Collapse" : "Expand"} ${title} section`}
-      >
-        <span>{title}</span>
-        {isOpen ? (
-          <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-        )}
-      </button>
-      {isOpen && (
-        <div id={sectionId} className="space-y-3">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface CustomSliderProps {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (value: number) => void;
-  description?: string;
-}
-
-const CustomSlider: React.FC<CustomSliderProps> = ({
-  label,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  description,
-}) => {
-  const [localValue, setLocalValue] = useState(value.toString());
-  const sliderId = React.useId();
-  const descriptionId = React.useId();
-
-  useEffect(() => {
-    setLocalValue(value.toString());
-  }, [value]);
-
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseFloat(e.target.value);
-    onChange(newValue);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(e.target.value);
-  };
-
-  const handleInputBlur = () => {
-    const parsed = parseFloat(localValue);
-    if (isNaN(parsed)) {
-      setLocalValue(value.toString());
-    } else {
-      const clamped = Math.max(min, Math.min(max, parsed));
-      onChange(clamped);
-      setLocalValue(clamped.toString());
-    }
-  };
-
-  const percentage = ((value - min) / (max - min)) * 100;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <label
-          htmlFor={sliderId}
-          className="text-xs font-medium text-zinc-700 dark:text-zinc-300"
-        >
-          {label}
-        </label>
-        <input
-          id={`${sliderId}-input`}
-          type="number"
-          value={localValue}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-          min={min}
-          max={max}
-          step={step}
-          className="w-16 px-2 py-1 text-xs text-right bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          aria-label={`${label} value input`}
-        />
-      </div>
-      <div className="relative">
-        <input
-          id={sliderId}
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={handleSliderChange}
-          className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          style={{
-            background: `linear-gradient(to right, rgb(99 102 241) 0%, rgb(99 102 241) ${percentage}%, rgb(228 228 231) ${percentage}%, rgb(228 228 231) 100%)`,
-          }}
-          aria-label={label}
-          aria-valuemin={min}
-          aria-valuemax={max}
-          aria-valuenow={value}
-          aria-describedby={description ? descriptionId : undefined}
-        />
-      </div>
-      {description && (
-        <p
-          id={descriptionId}
-          className="text-[10px] text-zinc-500 dark:text-zinc-400 px-1 leading-relaxed"
-        >
-          {description}
-        </p>
-      )}
-    </div>
-  );
-};
 
 // PathPreview komponens beágyazva (mivel az import problémás)
 interface PathPreviewProps {
@@ -471,8 +331,8 @@ export const ShapeTab: React.FC<ShapeTabProps> = ({ state, updateState }) => {
             max={MAX_EXPONENT}
             step={0.1}
             onChange={(val) => updateState({ exp: val })}
-            description={exponentDescription}
           />
+          <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">{exponentDescription}</p>
           <div className="p-2 bg-zinc-50 dark:bg-zinc-900 rounded-md border border-zinc-100 dark:border-zinc-800">
             <p className="text-[10px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
               <strong>n=2:</strong> Perfect ellipse

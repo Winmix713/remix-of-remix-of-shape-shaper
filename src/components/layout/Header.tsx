@@ -16,6 +16,7 @@ interface HeaderProps {
   onDeviceChange: (device: DeviceType) => void;
   inspectorActive: boolean;
   onToggleInspector: () => void;
+  onExport?: () => void;
 }
 
 const VIEW_MODES: { mode: ViewMode; label: string; icon: React.ElementType }[] = [
@@ -39,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   onDeviceChange,
   inspectorActive,
   onToggleInspector,
+  onExport,
 }) => {
   return (
     <>
@@ -165,6 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Export */}
           <button 
+            onClick={onExport}
             className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             title="Export"
             aria-label="Export project"

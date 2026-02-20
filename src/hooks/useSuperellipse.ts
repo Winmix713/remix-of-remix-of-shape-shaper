@@ -434,7 +434,24 @@ export function useSuperellipse(): UseSuperellipseReturn {
   // State Management
   // ========================================================================
   
-  const [state, setState] = useState<SuperellipseState>(DEFAULT_STATE);
+  // Load persisted state from localStorage on initial mount
+  const getInitialState = (): SuperellipseState => {
+    try {
+      const saved = localStorage.getItem('superellipse-state');
+      if (saved) {
+        const parsed = JSON.parse(saved) as SuperellipseState;
+        // Basic validation - must have required fields
+        if (parsed && typeof parsed.exp === 'number' && typeof parsed.width === 'number') {
+          return { ...DEFAULT_STATE, ...parsed };
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load saved state:', e);
+    }
+    return DEFAULT_STATE;
+  };
+
+  const [state, setState] = useState<SuperellipseState>(getInitialState);
   const isComponentMounted = useRef(true);
   const stateHistory = useRef<SuperellipseState[]>([]);
 
@@ -761,6 +778,31 @@ export function useSuperellipse(): UseSuperellipseReturn {
       shadowIntensity: randomInt(20, 40),
     });
   }, [updateState]);
+
+  // ========================================================================
+  // Auto-save to localStorage (1s debounce)
+  // ========================================================================
+
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem('superellipse-state', JSON.stringify(state));
+      } catch (e) {
+        console.warn('Failed to auto-save state:', e);
+      }
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [state]);
 
   // ========================================================================
   // Save state history for potential undo functionality

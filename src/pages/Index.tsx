@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from '@/hooks/use-toast';
 import { Header } from '../components/layout/Header';
 import { StatusBar } from '../components/layout/StatusBar';
 import { PreviewArea } from '../components/generator/PreviewArea';
@@ -14,7 +15,7 @@ import { Dock } from '../components/generator/Dock';
 import { CanvasContextMenu } from '../components/generator/CanvasContextMenu';
 import { CanvasHUD } from '../components/generator/CanvasHUD';
 import { generateSVG } from '../utils/math';
-import { useSuperellipse } from '../hooks/useSuperellipse';
+import { useSuperellipse, SuperellipseState } from '../hooks/useSuperellipse';
 import { useLayerManager } from '../hooks/useLayerManager';
 import { useCanvasNavigation } from '../hooks/useCanvasNavigation';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -89,11 +90,40 @@ const Index: React.FC = () => {
     }
   }, [layerManager]);
 
+  const handleSave = useCallback(() => {
+    try {
+      localStorage.setItem('superellipse-state', JSON.stringify(state));
+      toast({
+        title: 'Design saved',
+        description: 'Your design has been saved to local storage.',
+        duration: 2000,
+      });
+    } catch {
+      toast({
+        title: 'Save failed',
+        description: 'Could not save design.',
+        variant: 'destructive',
+        duration: 2000,
+      });
+    }
+  }, [state]);
+
+  const handleApplyShapePreset = useCallback((updates: Partial<SuperellipseState>) => {
+    updateState(updates);
+    toast({
+      title: 'Shape preset applied',
+      description: `Exponent set to n=${updates.exp?.toFixed(1)}`,
+      duration: 1500,
+    });
+  }, [updateState]);
+
   useKeyboardShortcuts({
     enabled: true,
     handlers: {
       undo: layerManager.undo,
       redo: layerManager.redo,
+      save: handleSave,
+      openExport: () => setShowExportModal(true),
       duplicateLayer: handleDuplicateLayer,
       deleteLayer: handleDeleteLayer,
       moveLayerUp: handleMoveLayerUp,
@@ -125,6 +155,7 @@ const Index: React.FC = () => {
         onDeviceChange={setDevice}
         inspectorActive={inspector.active}
         onToggleInspector={toggleInspector}
+        onExport={() => setShowExportModal(true)}
       />
       
       <main id="main-content" className="flex-1 flex overflow-hidden relative">
@@ -148,6 +179,7 @@ const Index: React.FC = () => {
             onSetBlendMode={layerManager.setBlendMode}
             onSetOpacity={layerManager.setOpacity}
             onUpdateTransform={layerManager.updateTransform}
+            onApplyShapePreset={handleApplyShapePreset}
           />
         )}
 
